@@ -139,6 +139,11 @@ function App() {
             <ScrapeResultsExtended data={scrapedData} />
           </div>
         )}
+
+        {/* Footer */}
+        <footer className="mt-12 text-center text-gray-600 text-sm">
+          <p>Developed by Pieter Luypaert</p>
+        </footer>
       </div>
     </div>
   );
