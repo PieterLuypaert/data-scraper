@@ -5,12 +5,13 @@ import { Alert, AlertDescription } from './ui/alert';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
-import { Loader2 } from 'lucide-react';
+import { Loader2, Camera } from 'lucide-react';
 
 export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [forcePuppeteer, setForcePuppeteer] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -24,7 +25,7 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
 
     setLoading(true);
     try {
-      const data = await scrapeWebsite(validation.normalizedUrl);
+      const data = await scrapeWebsite(validation.normalizedUrl, forcePuppeteer);
       
       // Save to history and update analytics
       saveToHistory(data, validation.normalizedUrl);
@@ -72,6 +73,19 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
               'Send'
             )}
           </Button>
+        </div>
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+            <input
+              type="checkbox"
+              checked={forcePuppeteer}
+              onChange={(e) => setForcePuppeteer(e.target.checked)}
+              disabled={loading}
+              className="rounded"
+            />
+            <Camera className="h-4 w-4" />
+            <span>Altijd screenshot maken (langzamer)</span>
+          </label>
         </div>
         {error && (
           <Alert variant="destructive">

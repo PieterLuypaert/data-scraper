@@ -7,16 +7,17 @@ const API_BASE_URL = '/api';
 /**
  * Scrapes a website and returns the data
  * @param {string} url - The URL to scrape
+ * @param {boolean} forcePuppeteer - Force use of Puppeteer for screenshots
  * @returns {Promise<Object>} The scraped data
  */
-export async function scrapeWebsite(url) {
+export async function scrapeWebsite(url, forcePuppeteer = false) {
   try {
     const response = await fetch(`${API_BASE_URL}/scrape`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url }),
+      body: JSON.stringify({ url, forcePuppeteer }),
     });
 
     const responseText = await response.text();

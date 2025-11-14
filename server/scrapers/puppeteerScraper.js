@@ -3,6 +3,15 @@ const axios = require('axios');
 const config = require('../config');
 
 /**
+ * Wait for specified milliseconds (compatible with all Puppeteer versions)
+ * @param {object} page - Puppeteer page object
+ * @param {number} ms - Milliseconds to wait
+ */
+async function wait(page, ms) {
+  return new Promise(resolve => setTimeout(resolve, ms));
+}
+
+/**
  * Scroll page to trigger lazy-loaded content
  * @param {object} page - Puppeteer page object
  * @param {number} passes - Number of scroll passes
@@ -28,7 +37,7 @@ async function scrollPage(page, passes = 3) {
       });
     });
     
-    await page.waitForTimeout(config.TIMEOUTS.scrollWait);
+    await wait(page, config.TIMEOUTS.scrollWait);
     
     // Trigger intersection observer for lazy loading
     await page.evaluate(() => {
@@ -38,7 +47,7 @@ async function scrollPage(page, passes = 3) {
       });
     });
     
-    await page.waitForTimeout(config.TIMEOUTS.cookieWait);
+    await wait(page, config.TIMEOUTS.cookieWait);
   }
   
   // Scroll back to top
@@ -69,7 +78,7 @@ async function forceLoadLazyImages(page) {
       img.loading = 'eager';
     });
   });
-  await page.waitForTimeout(config.TIMEOUTS.imageLoad);
+  await wait(page, config.TIMEOUTS.imageLoad);
 }
 
 /**
@@ -85,7 +94,7 @@ async function handleCookieBanner(page) {
         if (button) {
           console.log(`Found cookie button with selector: ${selector}`);
           await button.click();
-          await page.waitForTimeout(config.TIMEOUTS.cookieWait);
+          await wait(page, config.TIMEOUTS.cookieWait);
           break;
         }
       } catch (e) {
@@ -159,7 +168,7 @@ async function scrapeWithPuppeteer(url) {
     await scrollPage(page, 3);
     
     // Wait for lazy-loaded images/content
-    await page.waitForTimeout(config.TIMEOUTS.imageLoad);
+    await wait(page, config.TIMEOUTS.imageLoad);
     
     // Force load lazy images
     await forceLoadLazyImages(page);
@@ -168,7 +177,7 @@ async function scrapeWithPuppeteer(url) {
     await handleCookieBanner(page);
     
     // Wait for content to load after interactions
-    await page.waitForTimeout(config.TIMEOUTS.imageLoad);
+    await wait(page, config.TIMEOUTS.imageLoad);
     
     // Try to wait for common content selectors
     try {
@@ -182,7 +191,7 @@ async function scrapeWithPuppeteer(url) {
     await waitForImages(page);
     
     // Final wait for any remaining dynamic content
-    await page.waitForTimeout(config.TIMEOUTS.imageLoad);
+    await wait(page, config.TIMEOUTS.imageLoad);
     
     // Get the final URL after redirects
     const finalUrl = page.url();
@@ -192,10 +201,30 @@ async function scrapeWithPuppeteer(url) {
     const htmlContent = await page.content();
     console.log(`HTML content length: ${htmlContent.length} characters`);
     
+    // Take screenshot before closing browser
+    console.log('Taking screenshot...');
+    let screenshot = null;
+    try {
+      screenshot = await page.screenshot({
+        type: 'png',
+        fullPage: true, // Capture entire page, not just viewport
+        encoding: 'base64' // Return as base64 string
+      });
+      console.log(`Screenshot captured successfully (${screenshot ? screenshot.length : 0} characters)`);
+    } catch (screenshotError) {
+      console.error('Error taking screenshot:', screenshotError.message);
+      console.error('Screenshot error stack:', screenshotError.stack);
+      // Continue without screenshot if it fails
+    }
+    
     await browser.close();
     console.log('Browser closed successfully');
     
-    return { htmlContent, finalUrl };
+    return { 
+      htmlContent, 
+      finalUrl,
+      screenshot: screenshot ? `data:image/png;base64,${screenshot}` : null
+    };
     
   } catch (puppeteerError) {
     console.error('Puppeteer error details:', {

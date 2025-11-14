@@ -102,13 +102,13 @@ async function crawlWebsite(startUrl, options = {}) {
       // Determine which scraper to use
       const usePuppeteer = needsPuppeteer(url, config.JS_HEAVY_SITES);
       
-      let htmlContent, finalUrl;
+      let htmlContent, finalUrl, result;
       if (usePuppeteer) {
-        const result = await scrapeWithPuppeteer(url);
+        result = await scrapeWithPuppeteer(url);
         htmlContent = result.htmlContent;
         finalUrl = result.finalUrl;
       } else {
-        const result = await scrapeWithCheerio(url);
+        result = await scrapeWithCheerio(url);
         htmlContent = result.htmlContent;
         finalUrl = result.finalUrl;
       }
@@ -117,6 +117,11 @@ async function crawlWebsite(startUrl, options = {}) {
       const scrapedData = extractAllData(htmlContent, finalUrl);
       scrapedData.crawlDepth = depth;
       scrapedData.crawlOrder = scrapedPages.length + 1;
+      
+      // Add screenshot if available (only from Puppeteer)
+      if (usePuppeteer && result.screenshot) {
+        scrapedData.screenshot = result.screenshot;
+      }
       
       scrapedPages.push(scrapedData);
 

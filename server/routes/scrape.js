@@ -8,7 +8,7 @@ const config = require('../config');
  * Main scrape route handler
  */
 async function handleScrape(req, res) {
-  const { url } = req.body;
+  const { url, forcePuppeteer } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -26,20 +26,30 @@ async function handleScrape(req, res) {
     let htmlContent, finalUrl;
     
     // Determine which scraper to use
-    const usePuppeteer = needsPuppeteer(url, config.JS_HEAVY_SITES);
+    // Use Puppeteer if forced, or if site is in JS_HEAVY_SITES list
+    const usePuppeteer = forcePuppeteer || needsPuppeteer(url, config.JS_HEAVY_SITES);
     
+    let result;
     if (usePuppeteer) {
-      const result = await scrapeWithPuppeteer(url);
+      result = await scrapeWithPuppeteer(url);
       htmlContent = result.htmlContent;
       finalUrl = result.finalUrl;
     } else {
-      const result = await scrapeWithCheerio(url);
+      result = await scrapeWithCheerio(url);
       htmlContent = result.htmlContent;
       finalUrl = result.finalUrl;
     }
 
     // Extract all data from HTML
     const scrapedData = extractAllData(htmlContent, finalUrl);
+    
+    // Add screenshot if available (only from Puppeteer)
+    if (usePuppeteer && result.screenshot) {
+      scrapedData.screenshot = result.screenshot;
+      console.log('Screenshot added to scraped data');
+    } else {
+      console.log('No screenshot available (usePuppeteer:', usePuppeteer, ', hasScreenshot:', !!result.screenshot, ')');
+    }
 
     res.json({
       success: true,

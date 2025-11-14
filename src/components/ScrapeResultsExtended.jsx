@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Copy, Check, Download, FileJson, FileSpreadsheet, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin } from 'lucide-react';
+import { Copy, Check, Download, FileJson, FileSpreadsheet, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
 import { exportToJSON, exportToCSV } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
@@ -22,6 +22,7 @@ export function ScrapeResultsExtended({ data }) {
   });
   const [sortBy, setSortBy] = useState('none');
   const [expandedSections, setExpandedSections] = useState({});
+  const [showFullScreenshot, setShowFullScreenshot] = useState(false);
 
   if (!data) return null;
 
@@ -216,6 +217,83 @@ export function ScrapeResultsExtended({ data }) {
           </div>
         </CardContent>
       </Card>
+
+      {/* Screenshot */}
+      {data.screenshot && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Camera className="h-4 w-4" />
+              Screenshot
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-3">
+              <div className="relative border border-gray-200 rounded-lg overflow-hidden bg-gray-50">
+                <img 
+                  src={data.screenshot} 
+                  alt="Page screenshot" 
+                  className="w-full h-auto cursor-pointer hover:opacity-90 transition-opacity"
+                  onClick={() => setShowFullScreenshot(true)}
+                />
+                <div className="absolute top-2 right-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setShowFullScreenshot(true)}
+                    className="bg-white/90 hover:bg-white"
+                  >
+                    <Maximize2 className="h-4 w-4 mr-2" />
+                    Volledig
+                  </Button>
+                </div>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={() => {
+                    const link = document.createElement('a');
+                    link.href = data.screenshot;
+                    link.download = `screenshot-${data.url?.replace(/[^a-z0-9]/gi, '-')}-${Date.now()}.png`;
+                    document.body.appendChild(link);
+                    link.click();
+                    document.body.removeChild(link);
+                  }}
+                >
+                  <Download className="h-4 w-4 mr-2" />
+                  Download Screenshot
+                </Button>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Full Screenshot Modal */}
+      {showFullScreenshot && data.screenshot && (
+        <div 
+          className="fixed inset-0 bg-black/80 z-50 flex items-center justify-center p-4"
+          onClick={() => setShowFullScreenshot(false)}
+        >
+          <div className="relative max-w-7xl max-h-full">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowFullScreenshot(false)}
+              className="absolute top-4 right-4 bg-white z-10"
+            >
+              <X className="h-4 w-4" />
+            </Button>
+            <img 
+              src={data.screenshot} 
+              alt="Full page screenshot" 
+              className="max-w-full max-h-[90vh] object-contain rounded-lg shadow-2xl"
+              onClick={(e) => e.stopPropagation()}
+            />
+          </div>
+        </div>
+      )}
 
       {/* Statistics */}
       {data.statistics && (
