@@ -12,6 +12,9 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 - **Change Detection**: Vergelijk scrapes om veranderingen te detecten
 - **Geschiedenis Management**: Opslaan en beheren van eerdere scrapes
 - **Analytics Dashboard**: Statistieken over scraping activiteit
+- **SEO Analysis Tool**: Volledige SEO analyse met score, issues, warnings en aanbevelingen
+- **Data Visualization**: Interactieve charts, word clouds en link graphs voor data analyse
+- **Screenshot Capture**: Automatische screenshot capture bij scraping (met Puppeteer)
 - **Export Functionaliteit**: Export naar JSON en CSV
 - **Zoeken & Filteren**: Zoek en filter door gescrapede data
 - **Sorteren**: Sorteer resultaten op verschillende criteria
@@ -41,7 +44,7 @@ data-scraper/
 │   │       ├── contentExtractors.js    # Paragraphs, lists, tables, forms
 │   │       ├── mediaExtractors.js      # Videos, audio, iframes, scripts
 │   │       ├── metaExtractors.js       # Data attributes, classes, IDs
-│   │       └── analysisExtractors.js   # Contact info, e-commerce, sentiment
+│   │       └── analysisExtractors.js   # Contact info, e-commerce, sentiment, SEO analysis
 │   └── routes/
 │       ├── scrape.js           # Main scrape endpoint handler
 │       ├── custom.js           # Custom CSS selector endpoint
@@ -60,6 +63,8 @@ data-scraper/
 │   │   ├── AnalyticsDashboard.jsx  # Analytics dashboard
 │   │   ├── HistoryManager.jsx  # History management
 │   │   ├── ChangeDetection.jsx  # Change detection UI
+│   │   ├── SEOAnalysis.jsx  # SEO analysis component
+│   │   ├── DataVisualization.jsx  # Data visualization with charts
 │   │   └── SearchAndFilter.jsx  # Search and filter component
 │   ├── utils/
 │   │   ├── validation.js       # URL validation
@@ -197,6 +202,43 @@ De applicatie detecteert automatisch of een site JavaScript-rendering nodig heef
    - Dagelijkse statistieken
    - Tijdlijn van activiteit
 
+### SEO Analysis
+
+1. Ga naar de "SEO Analysis" tab
+2. Scrape eerst een website (of selecteer uit geschiedenis)
+3. Bekijk de volledige SEO analyse:
+   - **SEO Score**: 0-100 score met kleurcodering
+   - **Kritieke Problemen**: Issues die direct moeten worden opgelost
+   - **Waarschuwingen**: Verbeterpunten voor betere SEO
+   - **Aanbevelingen**: Concrete tips voor SEO optimalisatie
+   - **Gedetailleerde Meta**: Title/description lengte, heading structuur, image alt tekst, links, mobile-friendliness, HTTPS, social media tags
+
+De SEO analyse controleert:
+
+- Title tag lengte (aanbevolen: 50-60 karakters)
+- Meta description lengte (aanbevolen: 150-160 karakters)
+- Heading structuur (H1, H2, H3)
+- Image alt tekst percentage
+- Open Graph tags
+- Twitter Card tags
+- Canonical URL
+- Mobile-friendliness (viewport meta tag)
+- HTTPS gebruik
+- URL structuur (lengte en diepte)
+- Schema.org structured data
+
+### Data Visualization
+
+1. Ga naar de "Data Visualization" tab
+2. Scrape eerst een website om data te visualiseren
+3. Kies uit verschillende visualisaties:
+   - **Statistieken**: Bar chart en pie chart van alle elementen (links, images, headings, etc.)
+   - **Word Cloud**: Meest voorkomende woorden uit de content met verschillende groottes
+   - **Link Graph**: Bar chart van interne vs externe links per domein
+   - **Analytics**: Line chart van dagelijkse scraping activiteit (succesvol vs gefaald)
+
+De visualisaties zijn interactief met tooltips en responsive design.
+
 ## Wat wordt er gescraped?
 
 De applicatie scrapet alle beschikbare data van een website:
@@ -267,6 +309,8 @@ De applicatie scrapet alle beschikbare data van een website:
 - **Content Type**: Detectie van blog, news, e-commerce, portfolio, corporate
 - **Content Analyse**: Meest voorkomende woorden, leesbaarheid, woordtelling
 - **Sentiment Analyse**: Positief/negatief/neutraal sentiment detectie
+- **SEO Analyse**: Volledige SEO score met issues, warnings en aanbevelingen
+- **Screenshots**: Automatische screenshot capture (bij gebruik van Puppeteer)
 
 ### Statistieken
 
@@ -329,6 +373,7 @@ De applicatie scrapet alle beschikbare data van een website:
 - **UI Library**: Shadcn UI
 - **Styling**: Tailwind CSS
 - **Icons**: Lucide React
+- **Charts**: Recharts voor data visualisatie
 - **Storage**: localStorage voor geschiedenis en analytics
 
 ## Code Organisatie
@@ -361,7 +406,7 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 - `server/scrapers/extractors/contentExtractors.js` - Paragraphs, lists, tables, forms, buttons
 - `server/scrapers/extractors/mediaExtractors.js` - Videos, audio, iframes, scripts, stylesheets
 - `server/scrapers/extractors/metaExtractors.js` - Data attributes, classes, IDs, comments, favicons
-- `server/scrapers/extractors/analysisExtractors.js` - Contact info, e-commerce, taal, sentiment, content analyse
+- `server/scrapers/extractors/analysisExtractors.js` - Contact info, e-commerce, taal, sentiment, content analyse, SEO analysis
 
 #### Routes
 
@@ -398,6 +443,8 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 - `src/components/AnalyticsDashboard.jsx` - Analytics dashboard
 - `src/components/HistoryManager.jsx` - Geschiedenis beheer
 - `src/components/ChangeDetection.jsx` - Change detection UI
+- `src/components/SEOAnalysis.jsx` - SEO analysis component met score en aanbevelingen
+- `src/components/DataVisualization.jsx` - Data visualization met charts, word clouds en link graphs
 - `src/components/SearchAndFilter.jsx` - Zoeken en filteren component
 
 ## API Endpoints
@@ -603,6 +650,8 @@ Voor andere sites wordt automatisch Cheerio gebruikt voor snellere scraping.
 - Cookie banner handling
 - Image loading wait
 - Network idle detection
+- Screenshot capture (full-page of viewport)
+- Dynamische content loading
 
 ## Opmerkingen
 
@@ -612,9 +661,12 @@ Voor andere sites wordt automatisch Cheerio gebruikt voor snellere scraping.
 - Zorg ervoor dat je toestemming hebt om websites te scrapen
 - Puppeteer wordt automatisch gebruikt voor JavaScript-heavy sites
 - Cheerio wordt gebruikt voor simpele statische sites
-- Geschiedenis wordt opgeslagen in localStorage (maximaal 100 items)
+- Screenshots worden automatisch gemaakt bij Puppeteer scraping (optioneel forceren met checkbox)
+- Screenshots worden niet opgeslagen in localStorage (te groot), maar wel getoond in resultaten
+- Geschiedenis wordt opgeslagen in localStorage (maximaal 100 items, automatisch verlaagd bij screenshots)
 - Analytics worden automatisch bijgewerkt bij elke scrape
 - Crawl sessies worden automatisch opgeschoond na 30 seconden
+- SEO analyse wordt automatisch uitgevoerd bij elke scrape
 
 ## Browser Ondersteuning
 
