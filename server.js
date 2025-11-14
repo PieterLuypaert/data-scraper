@@ -562,13 +562,197 @@ app.post('/api/scrape', async (req, res) => {
       });
     });
 
+    // ========== CONTACT INFO EXTRACTION ==========
+    const allTextForContact = [
+      title,
+      description,
+      bodyText,
+      ...links.map(l => l.text || l.href || ''),
+      ...paragraphs.map(p => typeof p === 'string' ? p : p.text || ''),
+      ...Object.values(metaTags),
+      ...Object.values(openGraphTags),
+      ...Object.values(twitterTags)
+    ].join(' ');
+
+    // Extract emails
+    const emailRegex = /[a-zA-Z0-9._%+-]+@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,}/g;
+    const emails = [...new Set((allTextForContact.match(emailRegex) || []))];
+
+    // Extract phone numbers
+    const phonePatterns = [
+      /\+?\d{1,4}[-.\s]?\(?\d{1,4}\)?[-.\s]?\d{1,4}[-.\s]?\d{1,9}/g,
+      /0\d{1,2}[-.\s]?\d{1,4}[-.\s]?\d{1,4}[-.\s]?\d{1,4}/g
+    ];
+    const phones = new Set();
+    phonePatterns.forEach(pattern => {
+      const matches = allTextForContact.match(pattern) || [];
+      matches.forEach(match => {
+        const digits = match.replace(/\D/g, '');
+        if (digits.length >= 7 && digits.length <= 15) {
+          phones.add(match.trim());
+        }
+      });
+    });
+
+    // Extract social media links
+    const socialMedia = {
+      facebook: links.filter(l => l.href?.toLowerCase().includes('facebook.com')),
+      twitter: links.filter(l => l.href?.toLowerCase().includes('twitter.com') || l.href?.toLowerCase().includes('x.com')),
+      linkedin: links.filter(l => l.href?.toLowerCase().includes('linkedin.com')),
+      instagram: links.filter(l => l.href?.toLowerCase().includes('instagram.com')),
+      youtube: links.filter(l => l.href?.toLowerCase().includes('youtube.com') || l.href?.toLowerCase().includes('youtu.be')),
+      github: links.filter(l => l.href?.toLowerCase().includes('github.com'))
+    };
+
+    // ========== E-COMMERCE DATA EXTRACTION ==========
+    const ecommerceData = {
+      products: [],
+      prices: [],
+      reviews: []
+    };
+
+    // Try to find product names (common patterns)
+    const productPatterns = [
+      /product[:\s]+([^\n<]+)/gi,
+      /item[:\s]+([^\n<]+)/gi,
+      /name[:\s]+([^\n<]+)/gi
+    ];
+
+    // Extract prices
+    const pricePatterns = [
+      /€\s*(\d+[.,]\d{2})/g,
+      /\$\s*(\d+[.,]\d{2})/g,
+      /(\d+[.,]\d{2})\s*€/g,
+      /price[:\s]+([€$]?\s*\d+[.,]?\d*)/gi
+    ];
+    const prices = new Set();
+    pricePatterns.forEach(pattern => {
+      const matches = allTextForContact.match(pattern) || [];
+      matches.forEach(match => prices.add(match.trim()));
+    });
+
+    // ========== RSS & SITEMAP DETECTION ==========
+    const rssFeeds = [];
+    const sitemaps = [];
+    
+    $('link[type="application/rss+xml"], link[rel="alternate"][type="application/rss+xml"]').each((i, elem) => {
+      const href = $(elem).attr('href');
+      if (href) rssFeeds.push(toAbsoluteUrl(href, finalUrl));
+    });
+
+    // Check for sitemap in robots.txt or meta
+    if (metaTags['robots']?.includes('sitemap') || links.some(l => l.href?.includes('sitemap'))) {
+      links.forEach(link => {
+        if (link.href?.toLowerCase().includes('sitemap')) {
+          sitemaps.push(link.href);
+        }
+      });
+    }
+
+    // ========== LANGUAGE DETECTION ==========
+    const detectLanguage = (text) => {
+      if (!text || text.length < 10) return { language: 'Unknown', code: 'unknown', confidence: 0 };
+      
+      const patterns = {
+        nl: ['de', 'het', 'een', 'van', 'in', 'is', 'op', 'te', 'voor', 'dat', 'met', 'die', 'aan', 'bij'],
+        en: ['the', 'be', 'to', 'of', 'and', 'a', 'in', 'that', 'have', 'i', 'it', 'for', 'not', 'on'],
+        fr: ['le', 'de', 'et', 'à', 'un', 'il', 'être', 'et', 'en', 'avoir', 'que', 'pour'],
+        de: ['der', 'die', 'und', 'in', 'den', 'von', 'zu', 'das', 'mit', 'sich', 'des']
+      };
+
+      const textLower = text.toLowerCase();
+      const scores = {};
+      
+      Object.keys(patterns).forEach(lang => {
+        let score = 0;
+        patterns[lang].forEach(word => {
+          const regex = new RegExp(`\\b${word}\\b`, 'gi');
+          const matches = textLower.match(regex);
+          if (matches) score += matches.length;
+        });
+        scores[lang] = score;
+      });
+
+      const sorted = Object.entries(scores).sort((a, b) => b[1] - a[1]);
+      const topLang = sorted[0];
+      const totalScore = Object.values(scores).reduce((sum, s) => sum + s, 0);
+      const confidence = totalScore > 0 ? Math.round((topLang[1] / totalScore) * 100) : 0;
+
+      const names = { nl: 'Nederlands', en: 'English', fr: 'Français', de: 'Deutsch' };
+      return {
+        language: names[topLang[0]] || topLang[0],
+        code: topLang[0],
+        confidence
+      };
+    };
+
+    const detectedLanguage = detectLanguage(bodyText);
+
+    // ========== CONTENT TYPE DETECTION ==========
+    const allTextLower = (title + ' ' + bodyText + ' ' + Object.values(metaTags).join(' ')).toLowerCase();
+    const contentType = {
+      isBlog: allTextLower.includes('blog') || allTextLower.includes('post') || allTextLower.includes('article'),
+      isNews: allTextLower.includes('news') || allTextLower.includes('breaking') || metaTags['og:type'] === 'article',
+      isEcommerce: allTextLower.includes('shop') || allTextLower.includes('cart') || allTextLower.includes('buy') || allTextLower.includes('price') || prices.size > 0,
+      isPortfolio: allTextLower.includes('portfolio') || allTextLower.includes('projects') || images.length > 10,
+      isCorporate: allTextLower.includes('about us') || allTextLower.includes('contact') || allTextLower.includes('services')
+    };
+
+    const primaryType = contentType.isBlog ? 'Blog' :
+                        contentType.isNews ? 'News' :
+                        contentType.isEcommerce ? 'E-commerce' :
+                        contentType.isPortfolio ? 'Portfolio' :
+                        contentType.isCorporate ? 'Corporate' : 'Unknown';
+
+    // ========== CONTENT ANALYSIS ==========
+    const words = bodyText.toLowerCase().replace(/[^\w\s]/g, ' ').split(/\s+/).filter(w => w.length >= 3);
+    const wordCount = {};
+    words.forEach(word => {
+      wordCount[word] = (wordCount[word] || 0) + 1;
+    });
+    const mostCommonWords = Object.entries(wordCount)
+      .map(([word, count]) => ({ word, count }))
+      .sort((a, b) => b.count - a.count)
+      .slice(0, 20);
+
+    // Readability calculation
+    const sentences = bodyText.split(/[.!?]+/).filter(s => s.trim().length > 0).length;
+    const wordCountTotal = words.length;
+    const avgSentenceLength = sentences > 0 ? wordCountTotal / sentences : 0;
+    const readability = {
+      sentences,
+      words: wordCountTotal,
+      avgSentenceLength: avgSentenceLength.toFixed(2),
+      estimatedReadingTime: Math.ceil(wordCountTotal / 200)
+    };
+
+    // ========== SENTIMENT ANALYSIS ==========
+    const positiveWords = ['good', 'great', 'excellent', 'amazing', 'wonderful', 'fantastic', 'awesome', 'perfect', 'love', 'like', 'happy', 'goed', 'geweldig', 'fantastisch'];
+    const negativeWords = ['bad', 'terrible', 'awful', 'horrible', 'worst', 'hate', 'disgusting', 'slecht', 'vreselijk', 'verschrikkelijk'];
+    const textLower = bodyText.toLowerCase();
+    let positiveCount = 0;
+    let negativeCount = 0;
+    positiveWords.forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      const matches = textLower.match(regex);
+      if (matches) positiveCount += matches.length;
+    });
+    negativeWords.forEach(word => {
+      const regex = new RegExp(`\\b${word}\\b`, 'gi');
+      const matches = textLower.match(regex);
+      if (matches) negativeCount += matches.length;
+    });
+    const totalSentiment = positiveCount + negativeCount;
+    const sentimentScore = totalSentiment > 0 ? ((positiveCount - negativeCount) / totalSentiment) * 100 : 0;
+    const sentiment = sentimentScore > 20 ? 'positive' : sentimentScore < -20 ? 'negative' : 'neutral';
+
     // ========== COMPILE ALL DATA ==========
     const scrapedData = {
       // Basic info
       title,
       description,
       url: finalUrl,
-      lang,
+      lang: lang || detectedLanguage.code,
       charset,
       
       // Meta tags
@@ -616,6 +800,49 @@ app.post('/api/scrape', async (req, res) => {
       textPreview: bodyText.substring(0, 2000),
       fullText: fullText.substring(0, 10000), // Limit to prevent huge responses
       
+      // Contact information
+      contactInfo: {
+        emails: emails,
+        phoneNumbers: Array.from(phones),
+        socialMedia: socialMedia
+      },
+      
+      // E-commerce data
+      ecommerce: {
+        hasProducts: ecommerceData.products.length > 0,
+        prices: Array.from(prices),
+        priceCount: prices.size
+      },
+      
+      // RSS & Sitemap
+      rssFeeds: rssFeeds,
+      sitemaps: sitemaps,
+      
+      // Language detection
+      languageDetection: detectedLanguage,
+      
+      // Content type
+      contentType: {
+        ...contentType,
+        primaryType: primaryType
+      },
+      
+      // Content analysis
+      contentAnalysis: {
+        mostCommonWords: mostCommonWords,
+        readability: readability,
+        wordCount: wordCountTotal,
+        characterCount: bodyText.length
+      },
+      
+      // Sentiment analysis
+      sentiment: {
+        sentiment: sentiment,
+        score: Math.round(sentimentScore),
+        positive: positiveCount,
+        negative: negativeCount
+      },
+      
       // Statistics
       elementCounts,
       statistics: {
@@ -636,7 +863,9 @@ app.post('/api/scrape', async (req, res) => {
         totalDataAttributes: dataAttributes.length,
         totalComments: comments.length,
         totalClasses: allClasses.size,
-        totalIds: allIds.size
+        totalIds: allIds.size,
+        totalEmails: emails.length,
+        totalPhones: phones.size
       }
     };
 
@@ -659,6 +888,177 @@ if (process.env.NODE_ENV === 'production') {
   app.get('*', (req, res) => {
     res.sendFile(path.join(__dirname, 'dist', 'index.html'));
   });
+}
+
+// Custom CSS selector endpoint
+app.post('/api/scrape/custom', async (req, res) => {
+  const { url, selectors } = req.body;
+
+  if (!url || !selectors || !Array.isArray(selectors)) {
+    return res.status(400).json({ error: 'URL and selectors array are required' });
+  }
+
+  try {
+    const response = await axios.get(url, {
+      timeout: 30000,
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
+      }
+    });
+
+    const $ = cheerio.load(response.data);
+    const results = {};
+
+    selectors.forEach(selector => {
+      try {
+        const elements = [];
+        $(selector.selector).each((i, elem) => {
+          const text = $(elem).text().trim();
+          const html = $(elem).html();
+          const attrs = extractAttributes($, elem);
+          
+          elements.push({
+            text,
+            html: html?.substring(0, 500),
+            attributes: attrs,
+            index: i
+          });
+        });
+        results[selector.name || selector.selector] = elements;
+      } catch (error) {
+        results[selector.name || selector.selector] = { error: error.message };
+      }
+    });
+
+    res.json({
+      success: true,
+      data: results
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to scrape with custom selectors',
+      message: error.message
+    });
+  }
+});
+
+// Change detection endpoint
+app.post('/api/compare', async (req, res) => {
+  const { oldData, newData } = req.body;
+
+  if (!oldData || !newData) {
+    return res.status(400).json({ error: 'Both oldData and newData are required' });
+  }
+
+  try {
+    // Use the compareScrapes function logic
+    const changes = {
+      added: {},
+      removed: {},
+      modified: {},
+      statistics: {
+        totalChanges: 0,
+        additions: 0,
+        removals: 0,
+        modifications: 0
+      }
+    };
+
+    // Compare title
+    if (oldData.title !== newData.title) {
+      changes.modified.title = { old: oldData.title, new: newData.title };
+      changes.statistics.modifications++;
+    }
+
+    // Compare links
+    const oldLinks = oldData.links || [];
+    const newLinks = newData.links || [];
+    const addedLinks = newLinks.filter(nl => !oldLinks.some(ol => (ol.href || ol) === (nl.href || nl)));
+    const removedLinks = oldLinks.filter(ol => !newLinks.some(nl => (ol.href || ol) === (nl.href || nl)));
+    
+    if (addedLinks.length > 0) {
+      changes.added.links = addedLinks;
+      changes.statistics.additions += addedLinks.length;
+    }
+    if (removedLinks.length > 0) {
+      changes.removed.links = removedLinks;
+      changes.statistics.removals += removedLinks.length;
+    }
+
+    // Compare images
+    const oldImages = oldData.images || [];
+    const newImages = newData.images || [];
+    const addedImages = newImages.filter(ni => !oldImages.some(oi => (oi.src || oi) === (ni.src || ni)));
+    const removedImages = oldImages.filter(oi => !newImages.some(ni => (oi.src || oi) === (ni.src || ni)));
+    
+    if (addedImages.length > 0) {
+      changes.added.images = addedImages;
+      changes.statistics.additions += addedImages.length;
+    }
+    if (removedImages.length > 0) {
+      changes.removed.images = removedImages;
+      changes.statistics.removals += removedImages.length;
+    }
+
+    // Compare text
+    const oldText = oldData.textPreview || oldData.fullText || '';
+    const newText = newData.textPreview || newData.fullText || '';
+    if (oldText !== newText) {
+      changes.modified.text = {
+        oldLength: oldText.length,
+        newLength: newText.length,
+        similarity: calculateSimilarity(oldText, newText)
+      };
+      changes.statistics.modifications++;
+    }
+
+    changes.statistics.totalChanges = 
+      changes.statistics.additions + 
+      changes.statistics.removals + 
+      changes.statistics.modifications;
+
+    res.json({
+      success: true,
+      changes
+    });
+  } catch (error) {
+    res.status(500).json({
+      error: 'Failed to compare scrapes',
+      message: error.message
+    });
+  }
+});
+
+function calculateSimilarity(str1, str2) {
+  const longer = str1.length > str2.length ? str1 : str2;
+  const shorter = str1.length > str2.length ? str2 : str1;
+  if (longer.length === 0) return 1.0;
+  const editDistance = levenshteinDistance(longer, shorter);
+  return (longer.length - editDistance) / longer.length;
+}
+
+function levenshteinDistance(str1, str2) {
+  const matrix = [];
+  for (let i = 0; i <= str2.length; i++) {
+    matrix[i] = [i];
+  }
+  for (let j = 0; j <= str1.length; j++) {
+    matrix[0][j] = j;
+  }
+  for (let i = 1; i <= str2.length; i++) {
+    for (let j = 1; j <= str1.length; j++) {
+      if (str2.charAt(i - 1) === str1.charAt(j - 1)) {
+        matrix[i][j] = matrix[i - 1][j - 1];
+      } else {
+        matrix[i][j] = Math.min(
+          matrix[i - 1][j - 1] + 1,
+          matrix[i][j - 1] + 1,
+          matrix[i - 1][j] + 1
+        );
+      }
+    }
+  }
+  return matrix[str2.length][str1.length];
 }
 
 // Health check endpoint

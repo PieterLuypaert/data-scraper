@@ -5,8 +5,9 @@ import { ScrapeResultsExtended } from "./components/ScrapeResultsExtended";
 import { BulkScrapeForm } from "./components/BulkScrapeForm";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { HistoryManager } from "./components/HistoryManager";
+import { ChangeDetection } from "./components/ChangeDetection";
 import { Button } from "./components/ui/button";
-import { Globe, BarChart3, History, FileDown } from "lucide-react";
+import { Globe, BarChart3, History, FileDown, GitCompare } from "lucide-react";
 
 function App() {
   const [scrapedData, setScrapedData] = useState(null);
@@ -49,6 +50,7 @@ function App() {
     { id: "scrape", label: "Scrapen", icon: Globe },
     { id: "bulk", label: "Bulk Scrapen", icon: FileDown },
     { id: "history", label: "Geschiedenis", icon: History },
+    { id: "changes", label: "Change Detection", icon: GitCompare },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
 
@@ -95,6 +97,7 @@ function App() {
             {activeTab === "history" && (
               <HistoryManager onSelectHistoryItem={handleSelectHistoryItem} />
             )}
+            {activeTab === "changes" && <ChangeDetection />}
             {activeTab === "analytics" && <AnalyticsDashboard />}
           </div>
         </div>
