@@ -1,6 +1,7 @@
 const express = require('express');
 const axios = require('axios');
 const cheerio = require('cheerio');
+const puppeteer = require('puppeteer');
 const cors = require('cors');
 const path = require('path');
 
@@ -55,27 +56,207 @@ app.post('/api/scrape', async (req, res) => {
   }
 
   try {
-    // Fetch the HTML content
-    const response = await axios.get(url, {
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Accept-Language': 'en-US,en;q=0.5',
-        'Accept-Encoding': 'gzip, deflate, br',
-        'Connection': 'keep-alive',
-        'Upgrade-Insecure-Requests': '1'
+    let htmlContent, finalUrl;
+    const domain = new URL(url).hostname.toLowerCase();
+    
+    // List of sites that typically require JavaScript rendering
+    const jsHeavySites = ['bol.com', 'amazon', 'coolblue', 'mediamarkt', 'wehkamp', 'zalando'];
+    const needsPuppeteer = jsHeavySites.some(site => domain.includes(site));
+    
+    if (needsPuppeteer) {
+      // Use Puppeteer for JavaScript-heavy sites
+      console.log(`Using Puppeteer for ${domain} - URL: ${url}`);
+      let browser;
+      try {
+        console.log('Launching Puppeteer browser...');
+        browser = await puppeteer.launch({
+          headless: true,
+          args: [
+            '--no-sandbox',
+            '--disable-setuid-sandbox',
+            '--disable-dev-shm-usage',
+            '--disable-accelerated-2d-canvas',
+            '--no-first-run',
+            '--no-zygote',
+            '--disable-gpu',
+            '--disable-blink-features=AutomationControlled',
+            '--disable-features=IsolateOrigins,site-per-process',
+            '--disable-web-security',
+            '--disable-features=VizDisplayCompositor'
+          ],
+          ignoreHTTPSErrors: true,
+          timeout: 60000
+        });
+        
+        console.log('Browser launched, creating new page...');
+        const page = await browser.newPage();
+        
+        // Remove webdriver property to avoid detection
+        await page.evaluateOnNewDocument(() => {
+          Object.defineProperty(navigator, 'webdriver', {
+            get: () => undefined
+          });
+          // Remove other automation indicators
+          delete window.chrome;
+          window.chrome = { runtime: {} };
+        });
+        
+        // Set realistic viewport and user agent
+        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        
+        // Set additional headers to look more like a real browser
+        await page.setExtraHTTPHeaders({
+          'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none',
+          'Cache-Control': 'max-age=0'
+        });
+        
+        console.log(`Navigating to ${url}...`);
+        // Navigate to the page and wait for content to load
+        await page.goto(url, {
+          waitUntil: 'domcontentloaded',
+          timeout: 45000
+        });
+        
+        console.log('Page loaded, waiting for dynamic content...');
+        // Wait a bit for dynamic content
+        await page.waitForTimeout(3000);
+        
+        // Try to wait for common content selectors
+        try {
+          await page.waitForSelector('body', { timeout: 5000 });
+          console.log('Body selector found');
+        } catch (e) {
+          console.log('Body selector not found, continuing anyway');
+        }
+        
+        // Get the final URL after redirects
+        finalUrl = page.url();
+        console.log(`Final URL: ${finalUrl}`);
+        
+        // Get the HTML content
+        htmlContent = await page.content();
+        console.log(`HTML content length: ${htmlContent.length} characters`);
+        
+        await browser.close();
+        console.log('Browser closed successfully');
+      } catch (puppeteerError) {
+        console.error('Puppeteer error details:', {
+          message: puppeteerError.message,
+          stack: puppeteerError.stack,
+          name: puppeteerError.name
+        });
+        if (browser) {
+          try {
+            await browser.close();
+          } catch (closeError) {
+            console.error('Error closing browser:', closeError);
+          }
+        }
+        // Provide more specific error message
+        let errorMsg = `Puppeteer error: ${puppeteerError.message}`;
+        if (puppeteerError.message.includes('Target closed')) {
+          errorMsg = 'Browser werd gesloten voordat de pagina kon worden geladen. Probeer het opnieuw.';
+        } else if (puppeteerError.message.includes('Navigation timeout')) {
+          errorMsg = 'Timeout: De website reageert niet snel genoeg. Probeer het later opnieuw.';
+        } else if (puppeteerError.message.includes('net::ERR')) {
+          errorMsg = `Netwerk error: ${puppeteerError.message}`;
+        }
+        // If Puppeteer fails, try fallback to axios
+        console.log('Puppeteer failed, trying fallback with axios...');
+        try {
+          const response = await axios.get(url, {
+            timeout: 30000,
+            headers: {
+              'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'none'
+            },
+            maxRedirects: 5
+          });
+          finalUrl = response.request.res.responseUrl || url;
+          htmlContent = response.data;
+          console.log('Fallback axios request successful');
+        } catch (axiosError) {
+          // If both fail, throw the original Puppeteer error
+          throw new Error(errorMsg);
+        }
       }
-    });
+    } else {
+      // Use axios for simpler sites
+      const response = await axios.get(url, {
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept-Encoding': 'gzip, deflate, br',
+          'Connection': 'keep-alive',
+          'Upgrade-Insecure-Requests': '1',
+          'Sec-Fetch-Dest': 'document',
+          'Sec-Fetch-Mode': 'navigate',
+          'Sec-Fetch-Site': 'none'
+        },
+        maxRedirects: 5
+      });
+      
+      finalUrl = response.request.res.responseUrl || url;
+      htmlContent = response.data;
+    }
 
-    const finalUrl = response.request.res.responseUrl || url;
-    const $ = cheerio.load(response.data);
+    let $;
+    try {
+      $ = cheerio.load(htmlContent, {
+        decodeEntities: false,
+        normalizeWhitespace: false
+      });
+    } catch (e) {
+      console.error('Error loading HTML with cheerio:', e);
+      throw new Error(`Failed to parse HTML: ${e.message}`);
+    }
 
     // ========== BASIC INFORMATION ==========
-    const title = $('title').text().trim() || 'No title';
-    const description = $('meta[name="description"]').attr('content') || '';
-    const lang = $('html').attr('lang') || $('html').attr('xml:lang') || '';
-    const charset = $('meta[charset]').attr('charset') || $('meta[http-equiv="Content-Type"]').attr('content') || '';
+    let title, description, lang, charset;
+    try {
+      title = $('title').text().trim() || 'No title';
+    } catch (e) {
+      console.error('Error getting title:', e);
+      title = 'No title';
+    }
+    
+    try {
+      description = $('meta[name="description"]').attr('content') || '';
+    } catch (e) {
+      console.error('Error getting description:', e);
+      description = '';
+    }
+    
+    try {
+      lang = $('html').attr('lang') || $('html').attr('xml:lang') || '';
+    } catch (e) {
+      console.error('Error getting lang:', e);
+      lang = '';
+    }
+    
+    try {
+      charset = $('meta[charset]').attr('charset') || $('meta[http-equiv="Content-Type"]').attr('content') || '';
+    } catch (e) {
+      console.error('Error getting charset:', e);
+      charset = '';
+    }
 
     // ========== META TAGS (ALL TYPES) ==========
     const metaTags = {};
@@ -83,7 +264,8 @@ app.post('/api/scrape', async (req, res) => {
     const twitterTags = {};
     const schemaTags = [];
 
-    $('meta').each((i, elem) => {
+    try {
+      $('meta').each((i, elem) => {
       const name = $(elem).attr('name');
       const property = $(elem).attr('property');
       const itemprop = $(elem).attr('itemprop');
@@ -104,6 +286,9 @@ app.post('/api/scrape', async (req, res) => {
         metaTags[httpEquiv] = content;
       }
     });
+    } catch (e) {
+      console.error('Error extracting meta tags:', e);
+    }
 
     // Extract JSON-LD structured data
     $('script[type="application/ld+json"]').each((i, elem) => {
@@ -380,7 +565,12 @@ app.post('/api/scrape', async (req, res) => {
 
     // ========== BUTTONS (STANDALONE) ==========
     const buttons = [];
-    $('button:not(form button)').each((i, elem) => {
+    // Use a safer selector - find all buttons and filter out those inside forms
+    $('button').each((i, elem) => {
+      // Skip buttons that are inside a form
+      if ($(elem).closest('form').length > 0) {
+        return;
+      }
       buttons.push({
         text: $(elem).text().trim(),
         type: $(elem).attr('type') || 'button',
@@ -501,7 +691,8 @@ app.post('/api/scrape', async (req, res) => {
 
     // ========== ALL DATA ATTRIBUTES ==========
     const dataAttributes = [];
-    $('[data-*]').each((i, elem) => {
+    // Use * selector and filter manually since [data-*] is not valid CSS
+    $('*').each((i, elem) => {
       const dataAttrs = {};
       Object.keys(elem.attribs || {}).forEach(key => {
         if (key.startsWith('data-')) {
@@ -875,10 +1066,45 @@ app.post('/api/scrape', async (req, res) => {
     });
 
   } catch (error) {
-    console.error('Scraping error:', error);
+    console.error('=== SCRAPING ERROR ===');
+    console.error('Error message:', error.message);
+    console.error('Error name:', error.name);
+    console.error('Error stack:', error.stack);
+    console.error('======================');
+    
+    // Provide more detailed error messages
+    let errorMessage = 'Failed to scrape website';
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Check for specific error types
+    if (error.message && error.message.includes('net::ERR')) {
+      if (error.message.includes('ERR_CONNECTION_REFUSED')) {
+        errorMessage = 'Verbinding geweigerd: De website is mogelijk niet bereikbaar of blokkeert de verbinding.';
+      } else if (error.message.includes('ERR_NAME_NOT_RESOLVED')) {
+        errorMessage = 'DNS error: De website kan niet worden gevonden. Controleer of de URL correct is.';
+      } else if (error.message.includes('ERR_SSL')) {
+        errorMessage = 'SSL error: Er is een probleem met het SSL certificaat van de website.';
+      } else {
+        errorMessage = `Netwerk error: ${error.message}`;
+      }
+    } else if (error.message && error.message.includes('timeout')) {
+      errorMessage = 'Timeout: De website reageert niet snel genoeg. Probeer het later opnieuw.';
+    } else if (error.message && error.message.includes('Navigation failed')) {
+      errorMessage = 'Navigatie gefaald: De website kan niet worden geladen. Mogelijk wordt scraping geblokkeerd.';
+    } else if (error.message && error.message.includes('Protocol error')) {
+      errorMessage = 'Protocol error: Er is een probleem met de verbinding. Probeer het opnieuw.';
+    } else if (error.message && error.message.includes('Puppeteer error')) {
+      errorMessage = error.message; // Keep Puppeteer error as-is
+    }
+    
     res.status(500).json({ 
-      error: 'Failed to scrape website',
-      message: error.message 
+      success: false,
+      error: errorMessage,
+      message: error.message,
+      name: error.name,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });
@@ -892,41 +1118,212 @@ if (process.env.NODE_ENV === 'production') {
 
 // Custom CSS selector endpoint
 app.post('/api/scrape/custom', async (req, res) => {
-  const { url, selectors } = req.body;
-
-  if (!url || !selectors || !Array.isArray(selectors)) {
-    return res.status(400).json({ error: 'URL and selectors array are required' });
-  }
-
   try {
-    const response = await axios.get(url, {
-      timeout: 30000,
-      headers: {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36'
-      }
-    });
+    const { url, selectors } = req.body;
 
-    const $ = cheerio.load(response.data);
+    if (!url || !selectors || !Array.isArray(selectors)) {
+      return res.status(400).json({ success: false, error: 'URL and selectors array are required' });
+    }
+    
+    // Use same logic as main scrape endpoint
+    let htmlContent, finalUrl;
+    const domain = new URL(url).hostname.toLowerCase();
+    const jsHeavySites = ['bol.com', 'amazon', 'coolblue', 'mediamarkt', 'wehkamp', 'zalando'];
+    const needsPuppeteer = jsHeavySites.some(site => domain.includes(site));
+    
+    if (needsPuppeteer) {
+      const browser = await puppeteer.launch({
+        headless: true,
+        args: [
+          '--no-sandbox',
+          '--disable-setuid-sandbox',
+          '--disable-dev-shm-usage',
+          '--disable-accelerated-2d-canvas',
+          '--no-first-run',
+          '--no-zygote',
+          '--disable-gpu'
+        ]
+      });
+      
+      try {
+        const page = await browser.newPage();
+        await page.setViewport({ width: 1920, height: 1080 });
+        await page.setUserAgent('Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36');
+        await page.setExtraHTTPHeaders({
+          'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,image/apng,*/*;q=0.8'
+        });
+        
+        await page.goto(url, { waitUntil: 'networkidle2', timeout: 30000 });
+        await page.waitForTimeout(2000);
+        finalUrl = page.url();
+        htmlContent = await page.content();
+        await browser.close();
+      } catch (puppeteerError) {
+        await browser.close();
+        throw puppeteerError;
+      }
+    } else {
+      const response = await axios.get(url, {
+        timeout: 30000,
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36',
+          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+          'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7'
+        }
+      });
+      finalUrl = response.request.res.responseUrl || url;
+      htmlContent = response.data;
+    }
+
+    const $ = cheerio.load(htmlContent);
     const results = {};
 
     selectors.forEach(selector => {
       try {
         const elements = [];
-        $(selector.selector).each((i, elem) => {
-          const text = $(elem).text().trim();
-          const html = $(elem).html();
-          const attrs = extractAttributes($, elem);
-          
-          elements.push({
-            text,
-            html: html?.substring(0, 500),
-            attributes: attrs,
-            index: i
-          });
+        const selectorString = selector.selector || selector;
+        
+        // Validate selector is not empty
+        if (!selectorString || !selectorString.trim()) {
+          results[selector.name || selectorString] = { error: 'Selector is leeg' };
+          return;
+        }
+
+        // Validate selector syntax (basic check)
+        // Remove invalid characters that could cause parsing errors
+        const cleanedSelector = selectorString.trim();
+        
+        // Try to find elements with the selector
+        let foundElements;
+        try {
+          foundElements = $(cleanedSelector);
+        } catch (selectorError) {
+          // If selector is invalid, return error
+          results[selector.name || cleanedSelector] = { 
+            error: `Ongeldige CSS selector: ${selectorError.message}`,
+            selector: cleanedSelector
+          };
+          return;
+        }
+        
+        if (foundElements.length === 0) {
+          results[selector.name || selectorString] = [];
+          return;
+        }
+
+        foundElements.each((i, elem) => {
+          try {
+            const $elem = $(elem);
+            const tagName = elem.name || elem.tagName || '';
+            let text = '';
+            let html = '';
+            const attrs = extractAttributes($, elem);
+            
+            // Get text content based on element type
+            if (tagName === 'img') {
+              // Special handling for images - try multiple src attributes
+              const src = $elem.attr('src') || 
+                         $elem.attr('data-src') || 
+                         $elem.attr('data-lazy-src') || 
+                         $elem.attr('data-original') ||
+                         $elem.attr('data-image') ||
+                         $elem.attr('data-img') ||
+                         $elem.attr('srcset')?.split(',')[0]?.trim().split(' ')[0] ||
+                         '';
+              const alt = $elem.attr('alt') || $elem.attr('title') || '';
+              const title = $elem.attr('title') || '';
+              
+              // Build display text
+              text = alt || title || src || 'Afbeelding';
+              html = $elem.toString();
+              
+              elements.push({
+                text: text,
+                html: html?.substring(0, 500),
+                attributes: attrs,
+                src: src ? toAbsoluteUrl(src, finalUrl) : null,
+                alt: alt,
+                title: title,
+                index: i,
+                tagName: tagName
+              });
+            } else if (tagName === 'meta') {
+              // Special handling for meta tags
+              const name = $elem.attr('name') || $elem.attr('property') || $elem.attr('itemprop') || $elem.attr('http-equiv') || '';
+              const content = $elem.attr('content') || $elem.attr('value') || '';
+              const property = $elem.attr('property') || '';
+              const charset = $elem.attr('charset') || '';
+              
+              // Build display text
+              let displayText = '';
+              if (name) displayText = `${name}: ${content}`;
+              else if (property) displayText = `${property}: ${content}`;
+              else if (charset) displayText = `charset: ${charset}`;
+              else displayText = content || 'Meta tag';
+              
+              html = $elem.toString();
+              elements.push({
+                text: displayText,
+                html: html?.substring(0, 500),
+                attributes: attrs,
+                name: name || property,
+                content: content || charset,
+                property: property,
+                charset: charset,
+                index: i,
+                tagName: tagName
+              });
+            } else if (tagName === 'a') {
+              // Special handling for links
+              const href = $elem.attr('href') || '';
+              const linkText = $elem.text().trim();
+              text = linkText || href;
+              html = $elem.html() || '';
+              elements.push({
+                text: text,
+                html: html?.substring(0, 500),
+                attributes: attrs,
+                href: href ? toAbsoluteUrl(href, finalUrl) : null,
+                index: i,
+                tagName: tagName
+              });
+            } else {
+              // Default handling for other elements
+              text = $elem.text().trim();
+              html = $elem.html() || '';
+              
+              // If no text content, try to get value attribute
+              if (!text && $elem.attr('value')) {
+                text = $elem.attr('value');
+              }
+              
+              // If still no text, try to get content attribute
+              if (!text && $elem.attr('content')) {
+                text = $elem.attr('content');
+              }
+              
+              elements.push({
+                text: text || '',
+                html: html?.substring(0, 500),
+                attributes: attrs,
+                index: i,
+                tagName: tagName
+              });
+            }
+          } catch (elemError) {
+            // Skip this element if there's an error processing it
+            console.error(`Error processing element ${i}:`, elemError);
+          }
         });
-        results[selector.name || selector.selector] = elements;
+        
+        results[selector.name || selectorString] = elements;
       } catch (error) {
-        results[selector.name || selector.selector] = { error: error.message };
+        console.error(`Error with selector "${selector.selector || selector}":`, error);
+        results[selector.name || selector.selector || 'unknown'] = { 
+          error: error.message || 'Onbekende fout bij het uitvoeren van de selector',
+          selector: selector.selector || selector
+        };
       }
     });
 
@@ -935,9 +1332,33 @@ app.post('/api/scrape/custom', async (req, res) => {
       data: results
     });
   } catch (error) {
+    console.error('Custom selector scraping error:', error);
+    console.error('Error stack:', error.stack);
+    
+    // Provide more detailed error messages
+    let errorMessage = 'Failed to scrape with custom selectors';
+    if (error.message) {
+      errorMessage = error.message;
+    }
+    
+    // Check for specific error types
+    if (error.message && error.message.includes('net::ERR')) {
+      errorMessage = 'Network error: Kan niet verbinden met de website. Controleer of de URL correct is.';
+    } else if (error.message && error.message.includes('timeout')) {
+      errorMessage = 'Timeout: De website reageert niet snel genoeg. Probeer het later opnieuw.';
+    } else if (error.message && error.message.includes('Navigation failed')) {
+      errorMessage = 'Navigatie gefaald: De website kan niet worden geladen. Mogelijk wordt scraping geblokkeerd.';
+    } else if (error.message && error.message.includes('Protocol error')) {
+      errorMessage = 'Protocol error: Er is een probleem met de verbinding. Probeer het opnieuw.';
+    } else if (error.message && error.message.includes('Puppeteer error')) {
+      errorMessage = error.message; // Keep Puppeteer error as-is
+    }
+    
     res.status(500).json({
-      error: 'Failed to scrape with custom selectors',
-      message: error.message
+      success: false,
+      error: errorMessage,
+      message: error.message,
+      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
     });
   }
 });

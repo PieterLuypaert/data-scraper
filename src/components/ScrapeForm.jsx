@@ -33,6 +33,7 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
       onScrapeSuccess(data);
       setUrl('');
     } catch (err) {
+      console.error('ScrapeForm error:', err);
       const errorMessage = err.message || 'Er is een fout opgetreden';
       updateAnalytics(false, validation.normalizedUrl);
       setError(errorMessage);

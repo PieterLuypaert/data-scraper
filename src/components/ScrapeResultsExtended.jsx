@@ -25,6 +25,9 @@ export function ScrapeResultsExtended({ data }) {
 
   if (!data) return null;
 
+  // Check if this is custom selector results
+  const isCustomResults = data.customResults && !data.title?.includes('Custom Selector');
+
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
       ...prev,
@@ -69,6 +72,77 @@ export function ScrapeResultsExtended({ data }) {
       alert(err.message);
     }
   };
+
+  // Custom Selector Results View
+  if (data.customResults) {
+    return (
+      <div className="w-full max-w-7xl mx-auto space-y-4 mt-4">
+        <div className="flex flex-wrap justify-between items-center gap-3 mb-3">
+          <div>
+            <h2 className="text-3xl font-bold text-gray-900">Custom Selector Resultaten</h2>
+            {data.url && (
+              <p className="text-sm text-gray-600 mt-1">
+                URL: <a href={data.url} target="_blank" rel="noopener noreferrer" className="hover:underline">{data.url}</a>
+              </p>
+            )}
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={handleCopy} variant="outline" size="sm">
+              {copied ? <><Check className="mr-2 h-4 w-4" />Gekopieerd!</> : <><Copy className="mr-2 h-4 w-4" />Kopieer</>}
+            </Button>
+            <Button onClick={handleExportJSON} variant="outline" size="sm">
+              <FileJson className="mr-2 h-4 w-4" />JSON
+            </Button>
+            <Button onClick={handleExportCSV} variant="outline" size="sm">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />CSV
+            </Button>
+          </div>
+        </div>
+
+        <div className="space-y-4">
+          {Object.entries(data.customResults).map(([key, value]) => (
+            <Card key={key}>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg">{key}</CardTitle>
+                {Array.isArray(value) && (
+                  <CardDescription>{value.length} element(en) gevonden</CardDescription>
+                )}
+              </CardHeader>
+              <CardContent className="pt-0">
+                {value.error ? (
+                  <Alert variant="destructive">
+                    <AlertDescription>Fout: {value.error}</AlertDescription>
+                  </Alert>
+                ) : Array.isArray(value) && value.length > 0 ? (
+                  <div className="space-y-2 max-h-96 overflow-y-auto">
+                    {value.map((item, i) => (
+                      <div key={i} className="p-3 bg-gray-50 rounded border border-gray-200">
+                        {item.text && (
+                          <div className="font-medium text-gray-900 mb-2">{item.text}</div>
+                        )}
+                        {item.html && (
+                          <div className="text-xs text-gray-600 font-mono bg-gray-100 p-2 rounded mb-2 line-clamp-3">
+                            {item.html}
+                          </div>
+                        )}
+                        {item.attributes && Object.keys(item.attributes).length > 0 && (
+                          <div className="text-xs text-gray-500">
+                            <strong>Attributen:</strong> {Object.entries(item.attributes).map(([k, v]) => `${k}="${v}"`).join(', ')}
+                          </div>
+                        )}
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">Geen elementen gevonden</div>
+                )}
+              </CardContent>
+            </Card>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="w-full max-w-7xl mx-auto space-y-4 mt-4">

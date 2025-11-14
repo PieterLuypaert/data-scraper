@@ -6,8 +6,16 @@ import { BulkScrapeForm } from "./components/BulkScrapeForm";
 import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { HistoryManager } from "./components/HistoryManager";
 import { ChangeDetection } from "./components/ChangeDetection";
+import { CustomSelector } from "./components/CustomSelector";
 import { Button } from "./components/ui/button";
-import { Globe, BarChart3, History, FileDown, GitCompare } from "lucide-react";
+import {
+  Globe,
+  BarChart3,
+  History,
+  FileDown,
+  GitCompare,
+  Code,
+} from "lucide-react";
 
 function App() {
   const [scrapedData, setScrapedData] = useState(null);
@@ -48,6 +56,7 @@ function App() {
 
   const tabs = [
     { id: "scrape", label: "Scrapen", icon: Globe },
+    { id: "custom", label: "Custom Selectors", icon: Code },
     { id: "bulk", label: "Bulk Scrapen", icon: FileDown },
     { id: "history", label: "Geschiedenis", icon: History },
     { id: "changes", label: "Change Detection", icon: GitCompare },
@@ -91,6 +100,13 @@ function App() {
                 onScrapeSuccess={(data) => handleScrapeSuccess(data)}
               />
             )}
+            {activeTab === "custom" && (
+              <CustomSelector
+                onScrapeSuccess={(data, url) => {
+                  handleScrapeSuccess(data, url);
+                }}
+              />
+            )}
             {activeTab === "bulk" && (
               <BulkScrapeForm onScrapeComplete={handleBulkComplete} />
             )}
@@ -103,7 +119,7 @@ function App() {
         </div>
 
         {/* Results */}
-        {scrapedData && activeTab === "scrape" && (
+        {scrapedData && (activeTab === "scrape" || activeTab === "custom") && (
           <div id="results" className="mt-8">
             <ScrapeResultsExtended data={scrapedData} />
           </div>

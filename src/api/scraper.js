@@ -19,32 +19,37 @@ export async function scrapeWebsite(url) {
       body: JSON.stringify({ url }),
     });
 
-    if (!response.ok) {
-      const errorText = await response.text();
-      let errorData;
-      try {
-        errorData = JSON.parse(errorText);
-      } catch (e) {
-        throw new Error(`Server error: ${response.status} ${response.statusText}`);
-      }
-      throw new Error(errorData.error || errorData.message || 'Er is een fout opgetreden');
+    const responseText = await response.text();
+    let data;
+    
+    try {
+      data = JSON.parse(responseText);
+    } catch (e) {
+      // If response is not JSON, it's likely an error
+      throw new Error(`Server error: ${response.status} ${response.statusText}. Response: ${responseText.substring(0, 200)}`);
     }
 
-    const data = await response.json();
+    if (!response.ok) {
+      // Use the detailed error message from the server
+      const errorMessage = data.error || data.message || `Server error: ${response.status} ${response.statusText}`;
+      console.error('Server error response:', data);
+      throw new Error(errorMessage);
+    }
 
     if (!data.success) {
-      throw new Error(data.error || 'Er is een fout opgetreden');
+      const errorMessage = data.error || data.message || 'Er is een fout opgetreden';
+      console.error('Scraping failed:', data);
+      throw new Error(errorMessage);
     }
 
     return data.data;
   } catch (error) {
+    console.error('Scraping error:', error);
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
       throw new Error('Kan niet verbinden met de server. Zorg ervoor dat de backend server draait op poort 3001.');
     }
-    throw new Error(
-      error.message ||
-        'Kon de website niet scrapen. Controleer of de URL correct is en probeer het opnieuw.'
-    );
+    // Pass through the error message from the server
+    throw error;
   }
 }
 
