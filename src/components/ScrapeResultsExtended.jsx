@@ -1,7 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Copy, Check, Download, FileJson, FileSpreadsheet, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X } from 'lucide-react';
+import { Copy, Check, Download, FileJson, FileSpreadsheet, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X, Search } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
 import { exportToJSON, exportToCSV } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
@@ -375,6 +375,55 @@ export function ScrapeResultsExtended({ data }) {
                 />
               </div>
               <div className="text-xs text-gray-600">Vertrouwen: {data.languageDetection.confidence}%</div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* SEO Analysis */}
+      {data.seoAnalysis && (
+        <Card>
+          <CardHeader className="pb-3">
+            <CardTitle className="flex items-center gap-2 text-lg">
+              <Search className="h-4 w-4" />
+              SEO Analyse
+            </CardTitle>
+          </CardHeader>
+          <CardContent className="pt-0">
+            <div className="space-y-4">
+              <div className="flex items-center gap-4">
+                <div className={`rounded-full w-20 h-20 flex items-center justify-center ${
+                  data.seoAnalysis.score >= 85 ? 'bg-green-100' :
+                  data.seoAnalysis.score >= 70 ? 'bg-blue-100' :
+                  data.seoAnalysis.score >= 50 ? 'bg-yellow-100' :
+                  'bg-red-100'
+                }`}>
+                  <span className={`text-2xl font-bold ${
+                    data.seoAnalysis.score >= 85 ? 'text-green-600' :
+                    data.seoAnalysis.score >= 70 ? 'text-blue-600' :
+                    data.seoAnalysis.score >= 50 ? 'text-yellow-600' :
+                    'text-red-600'
+                  }`}>
+                    {data.seoAnalysis.score}
+                  </span>
+                </div>
+                <div>
+                  <div className="text-lg font-bold text-gray-900">{data.seoAnalysis.rating}</div>
+                  <div className="text-sm text-gray-600">
+                    {data.seoAnalysis.issues.length} problemen • {data.seoAnalysis.warnings.length} waarschuwingen
+                  </div>
+                </div>
+              </div>
+              {data.seoAnalysis.issues.length > 0 && (
+                <div className="p-3 bg-red-50 rounded border border-red-200">
+                  <div className="text-sm font-medium text-red-900 mb-1">Kritieke Problemen:</div>
+                  <ul className="text-sm text-red-700 list-disc list-inside">
+                    {data.seoAnalysis.issues.slice(0, 3).map((issue, i) => (
+                      <li key={i}>{issue}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
           </CardContent>
         </Card>

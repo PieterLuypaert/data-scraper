@@ -8,6 +8,8 @@ import { HistoryManager } from "./components/HistoryManager";
 import { ChangeDetection } from "./components/ChangeDetection";
 import { CustomSelector } from "./components/CustomSelector";
 import { CrawlForm } from "./components/CrawlForm";
+import { SEOAnalysis } from "./components/SEOAnalysis";
+import { DataVisualization } from "./components/DataVisualization";
 import { Button } from "./components/ui/button";
 import {
   Globe,
@@ -17,6 +19,8 @@ import {
   GitCompare,
   Code,
   Network,
+  Search,
+  TrendingUp,
 } from "lucide-react";
 
 function App() {
@@ -63,6 +67,8 @@ function App() {
     { id: "bulk", label: "Bulk Scrapen", icon: FileDown },
     { id: "history", label: "Geschiedenis", icon: History },
     { id: "changes", label: "Change Detection", icon: GitCompare },
+    { id: "seo", label: "SEO Analysis", icon: Search },
+    { id: "visualization", label: "Data Visualization", icon: TrendingUp },
     { id: "analytics", label: "Analytics", icon: BarChart3 },
   ];
 
@@ -129,6 +135,10 @@ function App() {
               <HistoryManager onSelectHistoryItem={handleSelectHistoryItem} />
             )}
             {activeTab === "changes" && <ChangeDetection />}
+            {activeTab === "seo" && <SEOAnalysis data={scrapedData} />}
+            {activeTab === "visualization" && (
+              <DataVisualization scrapedData={scrapedData} />
+            )}
             {activeTab === "analytics" && <AnalyticsDashboard />}
           </div>
         </div>
