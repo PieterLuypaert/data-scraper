@@ -7,6 +7,7 @@ import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
 import { HistoryManager } from "./components/HistoryManager";
 import { ChangeDetection } from "./components/ChangeDetection";
 import { CustomSelector } from "./components/CustomSelector";
+import { CrawlForm } from "./components/CrawlForm";
 import { Button } from "./components/ui/button";
 import {
   Globe,
@@ -15,6 +16,7 @@ import {
   FileDown,
   GitCompare,
   Code,
+  Network,
 } from "lucide-react";
 
 function App() {
@@ -56,6 +58,7 @@ function App() {
 
   const tabs = [
     { id: "scrape", label: "Scrapen", icon: Globe },
+    { id: "crawl", label: "Crawlen", icon: Network },
     { id: "custom", label: "Custom Selectors", icon: Code },
     { id: "bulk", label: "Bulk Scrapen", icon: FileDown },
     { id: "history", label: "Geschiedenis", icon: History },
@@ -98,6 +101,18 @@ function App() {
             {activeTab === "scrape" && (
               <ScrapeForm
                 onScrapeSuccess={(data) => handleScrapeSuccess(data)}
+              />
+            )}
+            {activeTab === "crawl" && (
+              <CrawlForm
+                onCrawlSuccess={(data) => {
+                  // Show summary or first page
+                  if (data.pages && data.pages.length > 0) {
+                    handleScrapeSuccess(data.pages[0]);
+                  } else {
+                    handleScrapeSuccess(data);
+                  }
+                }}
               />
             )}
             {activeTab === "custom" && (
