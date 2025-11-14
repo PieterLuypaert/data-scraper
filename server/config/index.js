@@ -53,7 +53,8 @@ module.exports = {
   
   // Scraping timeouts
   TIMEOUTS: {
-    navigation: 60000,
+    navigation: 60000, // 60 seconds default
+    navigationScreenshot: 180000, // 3 minutes for screenshots
     selector: 5000,
     imageLoad: 2000,
     scrollWait: 1500,

@@ -8,7 +8,7 @@ import {
   clearHistory,
 } from '@/utils/storage';
 import { batchExport } from '@/utils/export';
-import { Trash2, Download, X, CheckSquare, Square } from 'lucide-react';
+import { Trash2, Download, X, CheckSquare, Square, Camera } from 'lucide-react';
 
 export function HistoryManager({ onSelectHistoryItem }) {
   const [history, setHistory] = useState([]);
@@ -198,13 +198,19 @@ export function HistoryManager({ onSelectHistoryItem }) {
                   <p className="text-xs text-gray-500 mt-1">
                     {formatDate(item.timestamp)}
                   </p>
-                  <div className="flex gap-4 mt-2 text-xs text-gray-500">
+                  <div className="flex gap-4 mt-2 text-xs text-gray-500 items-center">
                     <span>
                       {item.data?.links?.length || 0} links
                     </span>
                     <span>
                       {item.data?.images?.length || 0} afbeeldingen
                     </span>
+                    {(item.hasScreenshot || item.data?._hadScreenshot) && (
+                      <span className="flex items-center gap-1 text-blue-600" title="Screenshot was beschikbaar maar niet opgeslagen (te groot voor localStorage)">
+                        <Camera className="h-3 w-3" />
+                        Screenshot
+                      </span>
+                    )}
                   </div>
                 </div>
                 <Button

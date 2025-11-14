@@ -31,7 +31,8 @@ async function handleScrape(req, res) {
     
     let result;
     if (usePuppeteer) {
-      result = await scrapeWithPuppeteer(url);
+      // Pass forcePuppeteer flag to enable screenshot-friendly settings
+      result = await scrapeWithPuppeteer(url, forcePuppeteer);
       htmlContent = result.htmlContent;
       finalUrl = result.finalUrl;
     } else {

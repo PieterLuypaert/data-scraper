@@ -126,9 +126,10 @@ async function waitForImages(page) {
 /**
  * Scrape a URL using Puppeteer
  * @param {string} url - URL to scrape
- * @returns {Promise<{htmlContent: string, finalUrl: string}>}
+ * @param {boolean} forceScreenshot - Force screenshot even if page loads slowly
+ * @returns {Promise<{htmlContent: string, finalUrl: string, screenshot: string|null}>}
  */
-async function scrapeWithPuppeteer(url) {
+async function scrapeWithPuppeteer(url, forceScreenshot = false) {
   console.log(`Using Puppeteer for ${new URL(url).hostname} - URL: ${url}`);
   let browser;
   
@@ -157,41 +158,98 @@ async function scrapeWithPuppeteer(url) {
     await page.setExtraHTTPHeaders(config.BROWSER_HEADERS);
     
     console.log(`Navigating to ${url}...`);
-    await page.goto(url, {
-      waitUntil: 'networkidle0',
-      timeout: config.TIMEOUTS.navigation
-    });
+    
+    // For screenshots, use fastest strategy and longest timeout
+    // 'domcontentloaded' waits only for DOM (fastest)
+    // 'load' waits for page load
+    // 'networkidle0' waits for no network activity (slowest but most complete)
+    const waitStrategy = forceScreenshot ? 'domcontentloaded' : 'networkidle0';
+    const timeout = forceScreenshot ? (config.TIMEOUTS.navigationScreenshot || 180000) : config.TIMEOUTS.navigation;
+    
+    console.log(`Using wait strategy: ${waitStrategy}, timeout: ${timeout}ms`);
+    
+    let navigationSuccess = false;
+    try {
+      await page.goto(url, {
+        waitUntil: waitStrategy,
+        timeout: timeout
+      });
+      navigationSuccess = true;
+      console.log('Page navigation completed');
+    } catch (timeoutError) {
+      // If timeout but screenshot is forced, try to continue anyway
+      if (forceScreenshot && (timeoutError.message.includes('timeout') || timeoutError.name === 'TimeoutError')) {
+        console.log('Navigation timeout, but continuing for screenshot...');
+        console.log('Checking if page loaded anyway...');
+        
+        // Check if page actually loaded despite timeout
+        try {
+          const currentUrl = page.url();
+          const content = await page.content();
+          if (content && content.length > 100 && currentUrl !== 'about:blank') {
+            console.log('Page content loaded despite timeout, continuing...');
+            navigationSuccess = true;
+            // Wait a bit for any remaining rendering
+            await wait(page, 3000);
+          } else {
+            console.log('Page seems empty, waiting longer...');
+            await wait(page, 10000); // Wait 10 seconds
+            navigationSuccess = true; // Continue anyway
+          }
+        } catch (contentError) {
+          console.log('Could not check page content, waiting and continuing...');
+          await wait(page, 5000);
+          navigationSuccess = true; // Continue anyway
+        }
+      } else {
+        throw timeoutError;
+      }
+    }
     
     console.log('Page loaded, waiting for dynamic content...');
     
-    // Scroll to trigger lazy-loaded content
-    await scrollPage(page, 3);
-    
-    // Wait for lazy-loaded images/content
-    await wait(page, config.TIMEOUTS.imageLoad);
-    
-    // Force load lazy images
-    await forceLoadLazyImages(page);
-    
-    // Handle cookie banners
-    await handleCookieBanner(page);
-    
-    // Wait for content to load after interactions
-    await wait(page, config.TIMEOUTS.imageLoad);
-    
-    // Try to wait for common content selectors
-    try {
-      await page.waitForSelector('body', { timeout: config.TIMEOUTS.selector });
-      console.log('Body selector found');
-    } catch (e) {
-      console.log('Body selector not found, continuing anyway');
+    // For forced screenshots, skip heavy operations and just wait a bit
+    if (forceScreenshot) {
+      console.log('Screenshot mode: using minimal wait for faster capture...');
+      // Just wait a bit for page to render
+      await wait(page, 2000);
+      // Try to handle cookie banners quickly
+      try {
+        await handleCookieBanner(page);
+      } catch (e) {
+        console.log('Cookie banner handling skipped');
+      }
+    } else {
+      // Full processing for JS-heavy sites
+      // Scroll to trigger lazy-loaded content
+      await scrollPage(page, 3);
+      
+      // Wait for lazy-loaded images/content
+      await wait(page, config.TIMEOUTS.imageLoad);
+      
+      // Force load lazy images
+      await forceLoadLazyImages(page);
+      
+      // Handle cookie banners
+      await handleCookieBanner(page);
+      
+      // Wait for content to load after interactions
+      await wait(page, config.TIMEOUTS.imageLoad);
+      
+      // Try to wait for common content selectors
+      try {
+        await page.waitForSelector('body', { timeout: config.TIMEOUTS.selector });
+        console.log('Body selector found');
+      } catch (e) {
+        console.log('Body selector not found, continuing anyway');
+      }
+      
+      // Wait for images to load
+      await waitForImages(page);
+      
+      // Final wait for any remaining dynamic content
+      await wait(page, config.TIMEOUTS.imageLoad);
     }
-    
-    // Wait for images to load
-    await waitForImages(page);
-    
-    // Final wait for any remaining dynamic content
-    await wait(page, config.TIMEOUTS.imageLoad);
     
     // Get the final URL after redirects
     const finalUrl = page.url();
@@ -205,16 +263,37 @@ async function scrapeWithPuppeteer(url) {
     console.log('Taking screenshot...');
     let screenshot = null;
     try {
-      screenshot = await page.screenshot({
-        type: 'png',
-        fullPage: true, // Capture entire page, not just viewport
-        encoding: 'base64' // Return as base64 string
-      });
+      // For smaller sites, use viewport screenshot (faster) instead of full page
+      const screenshotOptions = forceScreenshot 
+        ? {
+            type: 'png',
+            fullPage: false, // Viewport only for faster capture
+            encoding: 'base64'
+          }
+        : {
+            type: 'png',
+            fullPage: true, // Full page for JS-heavy sites
+            encoding: 'base64'
+          };
+      
+      screenshot = await page.screenshot(screenshotOptions);
       console.log(`Screenshot captured successfully (${screenshot ? screenshot.length : 0} characters)`);
     } catch (screenshotError) {
       console.error('Error taking screenshot:', screenshotError.message);
-      console.error('Screenshot error stack:', screenshotError.stack);
-      // Continue without screenshot if it fails
+      // If screenshot is forced, try viewport screenshot as fallback
+      if (forceScreenshot) {
+        try {
+          console.log('Trying viewport screenshot as fallback...');
+          screenshot = await page.screenshot({
+            type: 'png',
+            fullPage: false,
+            encoding: 'base64'
+          });
+          console.log('Viewport screenshot captured successfully');
+        } catch (fallbackError) {
+          console.error('Fallback screenshot also failed:', fallbackError.message);
+        }
+      }
     }
     
     await browser.close();
@@ -251,29 +330,35 @@ async function scrapeWithPuppeteer(url) {
       errorMsg = `Netwerk error: ${puppeteerError.message}`;
     }
     
-    // If Puppeteer fails, try fallback to axios
-    console.log('Puppeteer failed, trying fallback with axios...');
-    try {
-      const response = await axios.get(url, {
-        timeout: 30000,
-        headers: {
-          'User-Agent': config.USER_AGENT,
-          'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-          'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
-          'Accept-Encoding': 'gzip, deflate, br',
-          'Connection': 'keep-alive',
-          'Upgrade-Insecure-Requests': '1',
-          'Sec-Fetch-Dest': 'document',
-          'Sec-Fetch-Mode': 'navigate',
-          'Sec-Fetch-Site': 'none'
-        },
-        maxRedirects: 5
-      });
-      const finalUrl = response.request.res.responseUrl || url;
-      const htmlContent = response.data;
-      console.log('Fallback axios request successful');
-      return { htmlContent, finalUrl };
-    } catch (axiosError) {
+    // If Puppeteer fails and screenshot is not forced, try fallback to axios
+    // If screenshot is forced, don't fallback (user wants screenshot, not just HTML)
+    if (!forceScreenshot) {
+      console.log('Puppeteer failed, trying fallback with axios...');
+      try {
+        const response = await axios.get(url, {
+          timeout: 30000,
+          headers: {
+            'User-Agent': config.USER_AGENT,
+            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+            'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
+            'Accept-Encoding': 'gzip, deflate, br',
+            'Connection': 'keep-alive',
+            'Upgrade-Insecure-Requests': '1',
+            'Sec-Fetch-Dest': 'document',
+            'Sec-Fetch-Mode': 'navigate',
+            'Sec-Fetch-Site': 'none'
+          },
+          maxRedirects: 5
+        });
+        const finalUrl = response.request.res.responseUrl || url;
+        const htmlContent = response.data;
+        console.log('Fallback axios request successful');
+        return { htmlContent, finalUrl };
+      } catch (axiosError) {
+        throw new Error(errorMsg);
+      }
+    } else {
+      // Screenshot was forced, so throw error instead of falling back
       throw new Error(errorMsg);
     }
   }

@@ -29,21 +29,60 @@ export function getHistory() {
 export function saveToHistory(scrapeData, url) {
   try {
     const history = getHistory();
+    
+    // Remove screenshot from data before saving (too large for localStorage)
+    // Keep a flag to indicate screenshot was available
+    const hasScreenshot = !!scrapeData.screenshot;
+    const dataToSave = { ...scrapeData };
+    if (dataToSave.screenshot) {
+      delete dataToSave.screenshot;
+      dataToSave._hadScreenshot = true; // Flag to indicate screenshot existed
+    }
+    
     const historyItem = {
       id: Date.now().toString(),
       url,
       timestamp: new Date().toISOString(),
-      data: scrapeData,
+      data: dataToSave,
+      hasScreenshot, // Store flag separately for easy checking
     };
     
     history.unshift(historyItem);
-    // Keep only last 100 items
-    const limitedHistory = history.slice(0, 100);
-    localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(limitedHistory));
+    
+    // Reduce limit if screenshots are present to avoid quota issues
+    // Keep only last 50 items if screenshots were involved, otherwise 100
+    const limit = hasScreenshot ? 50 : 100;
+    const limitedHistory = history.slice(0, limit);
+    
+    try {
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(limitedHistory));
+    } catch (quotaError) {
+      // If still too large, try with even fewer items
+      if (quotaError.name === 'QuotaExceededError') {
+        console.warn('History too large, reducing to 20 items...');
+        const reducedHistory = history.slice(0, 20);
+        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(reducedHistory));
+      } else {
+        throw quotaError;
+      }
+    }
     
     return historyItem;
   } catch (error) {
     console.error('Error saving to history:', error);
+    // Try to clear old history and retry once
+    if (error.name === 'QuotaExceededError') {
+      console.warn('Clearing old history to make space...');
+      try {
+        const history = getHistory();
+        // Keep only last 10 items
+        const minimalHistory = history.slice(0, 10);
+        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(minimalHistory));
+        console.log('History cleared, please try again');
+      } catch (clearError) {
+        console.error('Failed to clear history:', clearError);
+      }
+    }
   }
 }
 
