@@ -5,7 +5,7 @@ const config = require('./server/config');
 const { handleScrape } = require('./server/routes/scrape');
 const { handleCustomSelectors } = require('./server/routes/custom');
 const { handleCompare } = require('./server/routes/compare');
-const { handleCrawl } = require('./server/routes/crawl');
+const { handleCrawl, handleCrawlProgress, handleCrawlResult } = require('./server/routes/crawl');
 
 const app = express();
 const PORT = config.PORT;
@@ -24,6 +24,8 @@ if (process.env.NODE_ENV === 'production') {
 app.post('/api/scrape', handleScrape);
 app.post('/api/scrape/custom', handleCustomSelectors);
 app.post('/api/crawl', handleCrawl);
+app.get('/api/crawl/progress', handleCrawlProgress);
+app.get('/api/crawl/result', handleCrawlResult);
 app.post('/api/compare', handleCompare);
 
 // Health check endpoint

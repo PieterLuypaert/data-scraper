@@ -20,7 +20,8 @@ async function crawlWebsite(startUrl, options = {}) {
     includeSubdomains = false, // Include subdomains
     excludePatterns = [],    // URL patterns to exclude (e.g., ['/login', '/logout'])
     delay = 1000,           // Delay between requests (ms)
-    followExternalLinks = false // Follow external links
+    followExternalLinks = false, // Follow external links
+    onProgress = null        // Progress callback function
   } = options;
 
   const visitedUrls = new Set();
@@ -31,11 +32,20 @@ async function crawlWebsite(startUrl, options = {}) {
   console.log(`Starting crawl of ${startUrl}`);
   console.log(`Max pages: ${maxPages}, Max depth: ${maxDepth}`);
 
+  // Initial progress update
+  if (onProgress) {
+    onProgress(0, maxPages, `Starting crawl of ${startUrl}...`, startUrl);
+  }
+
   while (queue.length > 0 && scrapedPages.length < maxPages) {
     const { url, depth } = queue.shift();
 
     // Skip if already visited or too deep
     if (visitedUrls.has(url) || depth > maxDepth) {
+      // Update progress even when skipping
+      if (onProgress && visitedUrls.has(url)) {
+        onProgress(scrapedPages.length, maxPages, `Skipping duplicate: ${url}`, url);
+      }
       continue;
     }
 
@@ -81,7 +91,13 @@ async function crawlWebsite(startUrl, options = {}) {
     visitedUrls.add(url);
 
     try {
-      console.log(`[${scrapedPages.length + 1}/${maxPages}] Scraping (depth ${depth}): ${url}`);
+      const currentPage = scrapedPages.length + 1;
+      console.log(`[${currentPage}/${maxPages}] Scraping (depth ${depth}): ${url}`);
+
+      // Update progress
+      if (onProgress) {
+        onProgress(currentPage, maxPages, `Scraping page ${currentPage}/${maxPages}: ${url}`, url);
+      }
 
       // Determine which scraper to use
       const usePuppeteer = needsPuppeteer(url, config.JS_HEAVY_SITES);
@@ -105,8 +121,9 @@ async function crawlWebsite(startUrl, options = {}) {
       scrapedPages.push(scrapedData);
 
       // Extract links for next level
+      let links = [];
       if (depth < maxDepth) {
-        const links = extractLinksFromHtml(htmlContent, finalUrl, baseDomain, {
+        links = extractLinksFromHtml(htmlContent, finalUrl, baseDomain, {
           sameDomain,
           includeSubdomains,
           followExternalLinks
@@ -122,6 +139,11 @@ async function crawlWebsite(startUrl, options = {}) {
         console.log(`Found ${links.length} new links, ${queue.length} in queue`);
       }
 
+      // Update progress after scraping
+      if (onProgress) {
+        onProgress(scrapedPages.length, maxPages, `Completed ${scrapedPages.length}/${maxPages} pages. ${queue.length} pages in queue.`, url);
+      }
+
       // Delay between requests to be respectful
       if (delay > 0 && queue.length > 0) {
         await new Promise(resolve => setTimeout(resolve, delay));
@@ -134,6 +156,11 @@ async function crawlWebsite(startUrl, options = {}) {
   }
 
   console.log(`Crawl completed. Scraped ${scrapedPages.length} pages.`);
+
+  // Final progress update
+  if (onProgress) {
+    onProgress(scrapedPages.length, maxPages, `Crawl completed! Scraped ${scrapedPages.length} pages.`, null);
+  }
 
   return {
     startUrl,

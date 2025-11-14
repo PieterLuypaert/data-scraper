@@ -61,7 +61,8 @@ export async function scrapeWebsite(url) {
  */
 export async function crawlWebsite(url, options = {}) {
   try {
-    const response = await fetch(`${API_BASE_URL}/crawl`, {
+    // Start crawl
+    const startResponse = await fetch(`${API_BASE_URL}/crawl`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
@@ -69,28 +70,56 @@ export async function crawlWebsite(url, options = {}) {
       body: JSON.stringify({ url, options }),
     });
 
-    const responseText = await response.text();
-    let data;
+    const startResponseText = await startResponse.text();
+    let startData;
     
     try {
-      data = JSON.parse(responseText);
+      startData = JSON.parse(startResponseText);
     } catch (e) {
-      throw new Error(`Server error: ${response.status} ${response.statusText}. Response: ${responseText.substring(0, 200)}`);
+      throw new Error(`Server error: ${startResponse.status} ${startResponse.statusText}. Response: ${startResponseText.substring(0, 200)}`);
     }
 
-    if (!response.ok) {
-      const errorMessage = data.error || data.message || `Server error: ${response.status} ${response.statusText}`;
-      console.error('Server error response:', data);
+    if (!startResponse.ok) {
+      const errorMessage = startData.error || startData.message || `Server error: ${startResponse.status} ${startResponse.statusText}`;
+      console.error('Server error response:', startData);
       throw new Error(errorMessage);
     }
 
-    if (!data.success) {
-      const errorMessage = data.error || data.message || 'Er is een fout opgetreden';
-      console.error('Crawling failed:', data);
+    if (!startData.success) {
+      const errorMessage = startData.error || startData.message || 'Er is een fout opgetreden';
+      console.error('Crawling failed:', startData);
       throw new Error(errorMessage);
     }
 
-    return data.data;
+    const sessionId = startData.sessionId;
+
+    // Poll for result
+    return new Promise((resolve, reject) => {
+      const resultInterval = setInterval(async () => {
+        try {
+          const resultResponse = await fetch(`${API_BASE_URL}/crawl/result?sessionId=${sessionId}`);
+          const resultData = await resultResponse.json();
+
+          if (resultData.success && resultData.data) {
+            clearInterval(resultInterval);
+            resolve(resultData.data);
+          } else if (resultData.error) {
+            clearInterval(resultInterval);
+            reject(new Error(resultData.error));
+          }
+          // Otherwise, still in progress, continue polling
+        } catch (error) {
+          clearInterval(resultInterval);
+          reject(error);
+        }
+      }, 2000); // Poll result every 2 seconds
+
+      // Timeout after 10 minutes
+      setTimeout(() => {
+        clearInterval(resultInterval);
+        reject(new Error('Crawl timeout: Operation took too long'));
+      }, 600000);
+    });
   } catch (error) {
     console.error('Crawling error:', error);
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {

@@ -20,12 +20,10 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
     delay: 1000,
     followExternalLinks: false
   });
-  const [progress, setProgress] = useState(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
-    setProgress(null);
 
     const validation = validateUrl(url);
     if (!validation.isValid) {
@@ -35,16 +33,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
 
     setLoading(true);
     try {
-      // Simulate progress updates (since we can't easily stream progress)
-      setProgress({ current: 0, total: options.maxPages, message: 'Starting crawl...' });
-      
       const data = await crawlWebsite(validation.normalizedUrl, options);
-      
-      setProgress({ 
-        current: data.totalPages, 
-        total: data.totalPages, 
-        message: `Crawl completed! Scraped ${data.totalPages} pages.` 
-      });
       
       onCrawlSuccess(data);
       setUrl('');
@@ -55,7 +44,6 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
       onCrawlError?.(errorMessage);
     } finally {
       setLoading(false);
-      setTimeout(() => setProgress(null), 3000);
     }
   };
 
@@ -206,30 +194,6 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                 </label>
               </div>
             </div>
-          )}
-
-          {/* Progress Indicator */}
-          {progress && (
-            <Alert>
-              <AlertDescription>
-                <div className="flex items-center justify-between">
-                  <span>{progress.message}</span>
-                  {progress.total > 0 && (
-                    <span className="text-sm text-gray-500">
-                      {progress.current} / {progress.total}
-                    </span>
-                  )}
-                </div>
-                {progress.total > 0 && (
-                  <div className="mt-2 w-full bg-gray-200 rounded-full h-2">
-                    <div
-                      className="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                      style={{ width: `${(progress.current / progress.total) * 100}%` }}
-                    />
-                  </div>
-                )}
-              </AlertDescription>
-            </Alert>
           )}
 
           {error && (
