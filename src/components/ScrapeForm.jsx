@@ -4,6 +4,7 @@ import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
+import { saveToHistory, updateAnalytics } from '@/utils/storage';
 import { Loader2 } from 'lucide-react';
 
 export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
@@ -24,10 +25,16 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
     setLoading(true);
     try {
       const data = await scrapeWebsite(validation.normalizedUrl);
+      
+      // Save to history and update analytics
+      saveToHistory(data, validation.normalizedUrl);
+      updateAnalytics(true, validation.normalizedUrl);
+      
       onScrapeSuccess(data);
       setUrl('');
     } catch (err) {
       const errorMessage = err.message || 'Er is een fout opgetreden';
+      updateAnalytics(false, validation.normalizedUrl);
       setError(errorMessage);
       onScrapeError?.(errorMessage);
     } finally {
