@@ -622,6 +622,10 @@ Voor andere sites wordt automatisch Cheerio gebruikt voor snellere scraping.
 - Firefox (laatste versies)
 - Safari (laatste versies)
 
+## Developer
+
+Developed by Pieter Luypaert
+
 ## Licentie
 
 ISC
