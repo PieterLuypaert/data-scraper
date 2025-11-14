@@ -5,7 +5,7 @@ const { extractImages } = require('./extractors/imageExtractor');
 const { extractParagraphs, extractLists, extractTables, extractForms, extractButtons } = require('./extractors/contentExtractors');
 const { extractVideos, extractAudio, extractIframes, extractScripts, extractStylesheets, extractSVGs, extractCanvases } = require('./extractors/mediaExtractors');
 const { extractDataAttributes, extractClassesAndIds, extractComments, extractFavicons, extractElementCounts, extractTextContent } = require('./extractors/metaExtractors');
-const { extractContactInfo, extractEcommerceData, extractRssAndSitemaps, detectLanguage, detectContentType, analyzeContent, analyzeSentiment } = require('./extractors/analysisExtractors');
+const { extractContactInfo, extractEcommerceData, extractRssAndSitemaps, detectLanguage, detectContentType, analyzeContent, analyzeSentiment, analyzeSEO } = require('./extractors/analysisExtractors');
 
 /**
  * Extract all data from HTML content
@@ -83,6 +83,7 @@ function extractAllData(htmlContent, finalUrl) {
   const contentType = detectContentType(title, bodyText, metaTags, ecommerce.prices, images);
   const contentAnalysis = analyzeContent(bodyText);
   const sentiment = analyzeSentiment(bodyText);
+  const seoAnalysis = analyzeSEO($, title, description, metaTags, headings, images, links, finalUrl);
   
   // Compile all data
   const scrapedData = {
@@ -156,6 +157,9 @@ function extractAllData(htmlContent, finalUrl) {
     
     // Sentiment analysis
     sentiment,
+    
+    // SEO analysis
+    seoAnalysis,
     
     // Statistics
     elementCounts,

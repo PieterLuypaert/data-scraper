@@ -29,6 +29,8 @@
     "lucide-react": "^0.553.0",
     "natural": "^8.1.0",
     "puppeteer": "^24.30.0",
+    "react-is": "^19.2.0",
+    "recharts": "^3.4.1",
     "sentiment": "^5.0.2",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7"
