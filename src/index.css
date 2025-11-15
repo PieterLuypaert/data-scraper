@@ -57,3 +57,19 @@
     @apply bg-background text-foreground;
   }
 }
+
+@layer utilities {
+  .scrollbar-hide {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;
+  }
+  
+  /* Ensure tabs container can scroll */
+  .scrollbar-hide {
+    overflow-x: auto;
+    overflow-y: hidden;
+  }
+}
