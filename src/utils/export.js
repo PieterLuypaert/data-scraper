@@ -2,6 +2,8 @@
  * Export utilities for JSON, CSV, Excel, and PDF
  */
 
+import { formatDate, formatTime, formatDateTime } from '../i18n';
+
 const API_BASE_URL = '/api';
 
 /**
