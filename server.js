@@ -24,6 +24,7 @@ const {
   exportCrawlToExcel,
   exportCrawlToPDF,
 } = require("./server/routes/export");
+const { generateInsights } = require("./server/routes/insights");
 
 const app = express();
 const PORT = config.PORT;
@@ -63,6 +64,9 @@ app.get("/api/proxy/health", checkProxyHealth);
 app.post("/api/proxy/add", addProxy);
 app.post("/api/proxy/remove", removeProxy);
 app.post("/api/proxy/reset", resetProxies);
+
+// AI Insights routes
+app.post("/api/insights/generate", generateInsights);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
