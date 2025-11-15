@@ -5,6 +5,71 @@
 const API_BASE_URL = '/api';
 
 /**
+ * Proxy management API functions
+ */
+export async function getProxyStats() {
+  const response = await fetch(`${API_BASE_URL}/proxy/stats`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to get proxy stats');
+  }
+  return data;
+}
+
+export async function checkProxyHealth() {
+  const response = await fetch(`${API_BASE_URL}/proxy/health`);
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to check proxy health');
+  }
+  return data;
+}
+
+export async function addProxy(proxy) {
+  const response = await fetch(`${API_BASE_URL}/proxy/add`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ proxy }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to add proxy');
+  }
+  return data;
+}
+
+export async function removeProxy(proxyUrl) {
+  const response = await fetch(`${API_BASE_URL}/proxy/remove`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+    body: JSON.stringify({ proxyUrl }),
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to remove proxy');
+  }
+  return data;
+}
+
+export async function resetProxies() {
+  const response = await fetch(`${API_BASE_URL}/proxy/reset`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+  const data = await response.json();
+  if (!response.ok) {
+    throw new Error(data.error || 'Failed to reset proxies');
+  }
+  return data;
+}
+
+/**
  * Scrapes a website and returns the data
  * @param {string} url - The URL to scrape
  * @param {boolean} forcePuppeteer - Force use of Puppeteer for screenshots
