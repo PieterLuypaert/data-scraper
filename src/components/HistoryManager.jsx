@@ -65,7 +65,7 @@ export function HistoryManager({ onSelectHistoryItem }) {
     }
   };
 
-  const handleExport = (format) => {
+  const handleExport = async (format) => {
     if (selectedItems.length === 0) {
       alert('Selecteer eerst items om te exporteren');
       return;
@@ -73,7 +73,11 @@ export function HistoryManager({ onSelectHistoryItem }) {
     const itemsToExport = history.filter((item) =>
       selectedItems.includes(item.id)
     );
-    batchExport(itemsToExport, format, `scrape-history-${Date.now()}`);
+    try {
+      await batchExport(itemsToExport, format, `scrape-history-${Date.now()}`);
+    } catch (err) {
+      alert(err.message);
+    }
   };
 
   const formatDate = (dateString) => {
@@ -124,6 +128,14 @@ export function HistoryManager({ onSelectHistoryItem }) {
               >
                 <Download className="mr-2 h-4 w-4" />
                 Export CSV
+              </Button>
+              <Button
+                variant="outline"
+                onClick={() => handleExport('excel')}
+                size="sm"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Export Excel
               </Button>
               <Button
                 variant="outline"

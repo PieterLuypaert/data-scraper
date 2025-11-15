@@ -15,7 +15,7 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 - **SEO Analysis Tool**: Volledige SEO analyse met score, issues, warnings en aanbevelingen
 - **Data Visualization**: Interactieve charts, word clouds en link graphs voor data analyse
 - **Screenshot Capture**: Automatische screenshot capture bij scraping (met Puppeteer)
-- **Export Functionaliteit**: Export naar JSON en CSV
+- **Export Functionaliteit**: Export naar JSON, CSV, Excel en PDF met automatische formatting
 - **Zoeken & Filteren**: Zoek en filter door gescrapede data
 - **Sorteren**: Sorteer resultaten op verschillende criteria
 - **Proxy Support**: Roterende proxies voor anti-bot bypass met health monitoring en automatische failover
@@ -325,14 +325,40 @@ De applicatie scrapet alle beschikbare data van een website:
 
 - **JSON Export**: Export volledige data als JSON
 - **CSV Export**: Export volledige data als CSV
+- **Excel Export**: Export naar Excel met meerdere sheets (Overview, Links, Images, Headings, Meta Tags) en automatische formatting
+- **PDF Export**: Export naar PDF met screenshots, statistieken en gestructureerde content
 - **Links CSV**: Export alleen links als CSV
 - **Images CSV**: Export alleen afbeeldingen als CSV
-- **Batch Export**: Export meerdere scrapes tegelijk (JSON/CSV)
+- **Batch Export**: Export meerdere scrapes tegelijk (JSON/CSV/Excel)
 
 ### Export Gebruik
 
-1. In de resultaten: gebruik de export knoppen bovenaan
-2. In geschiedenis: selecteer items en gebruik "Export JSON" of "Export CSV"
+1. In de resultaten: gebruik de export knoppen bovenaan (JSON, CSV, Excel, PDF)
+2. In geschiedenis: selecteer items en gebruik "Export JSON", "Export CSV" of "Export Excel"
+
+### Excel Export Features
+
+- **Meerdere Sheets**: Data wordt georganiseerd in verschillende sheets:
+  - Overview: Basis informatie en statistieken
+  - Links: Alle links met tekst, URL, title, target, rel
+  - Images: Alle afbeeldingen met alt tekst, source, afmetingen
+  - Headings: Alle headings met level, tekst, ID, class
+  - Meta Tags: Alle meta tags met name en content
+- **Automatische Formatting**: Headers worden automatisch geformatteerd
+- **Batch Export**: Meerdere scrapes in één Excel bestand met summary sheet
+
+### PDF Export Features
+
+- **Screenshots**: Screenshots worden automatisch toegevoegd aan het PDF
+- **Gestructureerde Content**: Data wordt georganiseerd in secties:
+  - Overview met basis informatie
+  - Statistics met aantallen
+  - Screenshot (indien beschikbaar)
+  - Links lijst (eerste 50)
+  - Images lijst (eerste 20)
+  - Headings hiërarchie
+- **Professionele Styling**: Automatische paginering en footer
+- **Klikbare Links**: Links in het PDF zijn klikbaar
 
 ## Zoeken & Filteren
 

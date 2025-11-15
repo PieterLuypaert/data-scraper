@@ -17,13 +17,27 @@ const {
   removeProxy,
   resetProxies,
 } = require("./server/routes/proxy");
+const {
+  exportToExcel,
+  exportToPDF,
+  batchExportToExcel,
+} = require("./server/routes/export");
 
 const app = express();
 const PORT = config.PORT;
 
 // Middleware
 app.use(cors());
-app.use(express.json());
+
+// Higher limit specifically for export routes (must be BEFORE default body parser)
+const exportBodyParser = express.json({ limit: "100mb" });
+app.post("/api/export/excel", exportBodyParser, exportToExcel);
+app.post("/api/export/pdf", exportBodyParser, exportToPDF);
+app.post("/api/export/batch-excel", exportBodyParser, batchExportToExcel);
+
+// Default body parser with smaller limit for other routes
+app.use(express.json({ limit: "10mb" }));
+app.use(express.urlencoded({ extended: true, limit: "10mb" }));
 
 // Serve static files from dist (React build) in production
 // In development, Vite dev server handles this
@@ -58,9 +72,25 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
-// Start the server
-app.listen(PORT, () => {
+// Start the server with error handling for port conflicts
+const server = app.listen(PORT, () => {
   console.log(`API server running on http://localhost:${PORT}`);
   console.log(`API endpoints available at http://localhost:${PORT}/api`);
   console.log("For frontend, run: npm run dev:frontend");
+});
+
+// Handle port already in use error
+server.on("error", (error) => {
+  if (error.code === "EADDRINUSE") {
+    console.error(`\n❌ Error: Port ${PORT} is already in use!`);
+    console.error(`\nProbeer een van de volgende oplossingen:`);
+    console.error(`1. Stop het proces dat poort ${PORT} gebruikt:`);
+    console.error(`   Windows: netstat -ano | findstr :${PORT}`);
+    console.error(`   Dan: taskkill /PID <PID> /F`);
+    console.error(`2. Of gebruik een andere poort door PORT=<poort> npm start`);
+    console.error(`\nVoorbeeld: PORT=3002 npm start\n`);
+    process.exit(1);
+  } else {
+    throw error;
+  }
 });

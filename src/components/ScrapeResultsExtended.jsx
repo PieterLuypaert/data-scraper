@@ -1,9 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Copy, Check, Download, FileJson, FileSpreadsheet, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X, Search } from 'lucide-react';
+import { Copy, Check, Download, FileJson, FileSpreadsheet, FileText as FileTextIcon, FileDown, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X, Search } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
-import { exportToJSON, exportToCSV } from '@/utils/export';
+import { exportToJSON, exportToCSV, exportToExcel, exportToPDF } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
 
 export function ScrapeResultsExtended({ data }) {
@@ -74,6 +74,22 @@ export function ScrapeResultsExtended({ data }) {
     }
   };
 
+  const handleExportExcel = async () => {
+    try {
+      await exportToExcel(data, `scrape-detailed-${Date.now()}`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
+  const handleExportPDF = async () => {
+    try {
+      await exportToPDF(data, `scrape-detailed-${Date.now()}`);
+    } catch (err) {
+      alert(err.message);
+    }
+  };
+
   // Custom Selector Results View
   if (data.customResults) {
     return (
@@ -96,6 +112,12 @@ export function ScrapeResultsExtended({ data }) {
             </Button>
             <Button onClick={handleExportCSV} variant="outline" size="sm">
               <FileSpreadsheet className="mr-2 h-4 w-4" />CSV
+            </Button>
+            <Button onClick={handleExportExcel} variant="outline" size="sm">
+              <FileSpreadsheet className="mr-2 h-4 w-4" />Excel
+            </Button>
+            <Button onClick={handleExportPDF} variant="outline" size="sm">
+              <FileTextIcon className="mr-2 h-4 w-4" />PDF
             </Button>
           </div>
         </div>
@@ -166,6 +188,12 @@ export function ScrapeResultsExtended({ data }) {
           </Button>
           <Button onClick={handleExportCSV} variant="outline" size="sm">
             <FileSpreadsheet className="mr-2 h-4 w-4" />CSV
+          </Button>
+          <Button onClick={handleExportExcel} variant="outline" size="sm">
+            <FileSpreadsheet className="mr-2 h-4 w-4" />Excel
+          </Button>
+          <Button onClick={handleExportPDF} variant="outline" size="sm">
+            <FileTextIcon className="mr-2 h-4 w-4" />PDF
           </Button>
         </div>
       </div>

@@ -22,67 +22,136 @@ export function getHistory() {
 }
 
 /**
- * Save scrape to history
- * @param {Object} scrapeData - The scraped data
- * @param {string} url - The URL that was scraped
+ * Compress data for storage by removing/limiting large arrays
+ * @param {Object} data - Data to compress
+ * @returns {Object} Compressed data
  */
+function compressDataForStorage(data) {
+  const compressed = { ...data };
+  
+  // Remove screenshot
+  if (compressed.screenshot) {
+    compressed._hadScreenshot = true;
+    delete compressed.screenshot;
+  }
+  
+  // Limit large arrays to prevent quota issues
+  const arrayLimits = {
+    links: 100,
+    images: 50,
+    headings: 50,
+    paragraphs: 100,
+    tables: 20,
+    forms: 20,
+    videos: 20,
+    scripts: 50,
+    stylesheets: 50,
+  };
+  
+  Object.keys(arrayLimits).forEach(key => {
+    if (compressed[key] && Array.isArray(compressed[key])) {
+      const limit = arrayLimits[key];
+      if (compressed[key].length > limit) {
+        compressed[`${key}_total`] = compressed[key].length;
+        compressed[key] = compressed[key].slice(0, limit);
+        compressed[`${key}_truncated`] = true;
+      }
+    }
+  });
+  
+  return compressed;
+}
+
 export function saveToHistory(scrapeData, url) {
   try {
     const history = getHistory();
     
-    // Remove screenshot from data before saving (too large for localStorage)
-    // Keep a flag to indicate screenshot was available
+    // Compress data before saving
+    const compressedData = compressDataForStorage(scrapeData);
     const hasScreenshot = !!scrapeData.screenshot;
-    const dataToSave = { ...scrapeData };
-    if (dataToSave.screenshot) {
-      delete dataToSave.screenshot;
-      dataToSave._hadScreenshot = true; // Flag to indicate screenshot existed
-    }
     
     const historyItem = {
       id: Date.now().toString(),
       url,
       timestamp: new Date().toISOString(),
-      data: dataToSave,
-      hasScreenshot, // Store flag separately for easy checking
+      data: compressedData,
+      hasScreenshot,
     };
     
     history.unshift(historyItem);
     
-    // Reduce limit if screenshots are present to avoid quota issues
-    // Keep only last 50 items if screenshots were involved, otherwise 100
-    const limit = hasScreenshot ? 50 : 100;
-    const limitedHistory = history.slice(0, limit);
+    // Start with lower limits to prevent quota issues
+    let limit = 30; // Reduced default limit
+    let limitedHistory = history.slice(0, limit);
     
-    try {
-      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(limitedHistory));
-    } catch (quotaError) {
-      // If still too large, try with even fewer items
-      if (quotaError.name === 'QuotaExceededError') {
-        console.warn('History too large, reducing to 20 items...');
-        const reducedHistory = history.slice(0, 20);
-        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(reducedHistory));
-      } else {
-        throw quotaError;
+    // Try to save with progressively smaller limits if quota exceeded
+    let saved = false;
+    const limits = [30, 20, 15, 10, 5];
+    
+    for (const tryLimit of limits) {
+      try {
+        limitedHistory = history.slice(0, tryLimit);
+        const jsonString = JSON.stringify(limitedHistory);
+        
+        // Check approximate size (rough estimate: 1 char ≈ 1 byte)
+        if (jsonString.length > 4 * 1024 * 1024) { // ~4MB limit
+          console.warn(`History item too large (${Math.round(jsonString.length / 1024)}KB), reducing limit...`);
+          continue;
+        }
+        
+        localStorage.setItem(STORAGE_KEYS.HISTORY, jsonString);
+        saved = true;
+        limit = tryLimit;
+        break;
+      } catch (quotaError) {
+        if (quotaError.name === 'QuotaExceededError') {
+          console.warn(`Quota exceeded with ${tryLimit} items, trying smaller limit...`);
+          continue;
+        } else {
+          throw quotaError;
+        }
       }
+    }
+    
+    if (!saved) {
+      // Last resort: keep only the new item
+      console.warn('History too large, keeping only latest item');
+      localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify([historyItem]));
     }
     
     return historyItem;
   } catch (error) {
     console.error('Error saving to history:', error);
-    // Try to clear old history and retry once
+    
+    // Final fallback: try to save just metadata
     if (error.name === 'QuotaExceededError') {
-      console.warn('Clearing old history to make space...');
       try {
-        const history = getHistory();
-        // Keep only last 10 items
-        const minimalHistory = history.slice(0, 10);
-        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify(minimalHistory));
-        console.log('History cleared, please try again');
-      } catch (clearError) {
-        console.error('Failed to clear history:', clearError);
+        console.warn('Quota exceeded, clearing history and saving minimal data...');
+        const minimalItem = {
+          id: Date.now().toString(),
+          url,
+          timestamp: new Date().toISOString(),
+          data: {
+            title: scrapeData.title || '',
+            url: scrapeData.url || url,
+            _compressed: true,
+            _hadScreenshot: !!scrapeData.screenshot,
+          },
+          hasScreenshot: !!scrapeData.screenshot,
+        };
+        localStorage.setItem(STORAGE_KEYS.HISTORY, JSON.stringify([minimalItem]));
+        return minimalItem;
+      } catch (finalError) {
+        console.error('Failed to save even minimal history:', finalError);
+        // Clear everything as last resort
+        try {
+          localStorage.removeItem(STORAGE_KEYS.HISTORY);
+        } catch (clearError) {
+          console.error('Failed to clear history:', clearError);
+        }
       }
     }
+    throw error;
   }
 }
 

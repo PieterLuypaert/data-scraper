@@ -5,6 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
+    "start:clean": "powershell -ExecutionPolicy Bypass -File ./scripts/kill-port.ps1; npm start",
     "dev": "node server.js",
     "build": "vite build",
     "preview": "vite preview",
@@ -30,12 +31,14 @@
     "jimp": "^1.6.0",
     "lucide-react": "^0.553.0",
     "natural": "^8.1.0",
+    "pdfkit": "^0.17.2",
     "puppeteer": "^24.30.0",
     "react-is": "^19.2.0",
     "recharts": "^3.4.1",
     "sentiment": "^5.0.2",
     "tailwind-merge": "^3.4.0",
-    "tailwindcss-animate": "^1.0.7"
+    "tailwindcss-animate": "^1.0.7",
+    "xlsx": "^0.18.5"
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^5.1.1",
