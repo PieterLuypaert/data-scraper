@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { ScrapeForm } from "./components/ScrapeForm";
 import { ScrapeResults } from "./components/ScrapeResults";
 import { ScrapeResultsExtended } from "./components/ScrapeResultsExtended";
@@ -10,6 +10,7 @@ import { CustomSelector } from "./components/CustomSelector";
 import { CrawlForm } from "./components/CrawlForm";
 import { SEOAnalysis } from "./components/SEOAnalysis";
 import { DataVisualization } from "./components/DataVisualization";
+import { ProxyManager } from "./components/ProxyManager";
 import { Button } from "./components/ui/button";
 import {
   Globe,
@@ -21,12 +22,32 @@ import {
   Network,
   Search,
   TrendingUp,
+  Server,
 } from "lucide-react";
 
 function App() {
   const [scrapedData, setScrapedData] = useState(null);
   const [activeTab, setActiveTab] = useState("scrape");
   const [currentUrl, setCurrentUrl] = useState(null);
+  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
+
+  useEffect(() => {
+    const handleResize = () => {
+      setIsLargeScreen(window.innerWidth >= 1024);
+    };
+    window.addEventListener('resize', handleResize);
+    return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Scroll active tab into view when it changes
+  useEffect(() => {
+    const activeButton = document.querySelector(`[data-tab-id="${activeTab}"]`);
+    if (activeButton) {
+      setTimeout(() => {
+        activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+      }, 100);
+    }
+  }, [activeTab]);
 
   const handleScrapeSuccess = (data, url) => {
     setScrapedData(data);
@@ -61,15 +82,16 @@ function App() {
   };
 
   const tabs = [
-    { id: "scrape", label: "Scrapen", icon: Globe },
-    { id: "crawl", label: "Crawlen", icon: Network },
-    { id: "custom", label: "Custom Selectors", icon: Code },
-    { id: "bulk", label: "Bulk Scrapen", icon: FileDown },
-    { id: "history", label: "Geschiedenis", icon: History },
-    { id: "changes", label: "Change Detection", icon: GitCompare },
-    { id: "seo", label: "SEO Analysis", icon: Search },
-    { id: "visualization", label: "Data Visualization", icon: TrendingUp },
-    { id: "analytics", label: "Analytics", icon: BarChart3 },
+    { id: "scrape", label: "Scrapen", shortLabel: "Scrapen", icon: Globe },
+    { id: "crawl", label: "Crawlen", shortLabel: "Crawlen", icon: Network },
+    { id: "custom", label: "Custom Selectors", shortLabel: "Custom", icon: Code },
+    { id: "bulk", label: "Bulk Scrapen", shortLabel: "Bulk", icon: FileDown },
+    { id: "history", label: "Geschiedenis", shortLabel: "Historie", icon: History },
+    { id: "changes", label: "Change Detection", shortLabel: "Changes", icon: GitCompare },
+    { id: "seo", label: "SEO Analysis", shortLabel: "SEO", icon: Search },
+    { id: "visualization", label: "Data Visualization", shortLabel: "Visual", icon: TrendingUp },
+    { id: "analytics", label: "Analytics", shortLabel: "Stats", icon: BarChart3 },
+    { id: "proxy", label: "Proxy Management", shortLabel: "Proxy", icon: Server },
   ];
 
   return (
@@ -83,21 +105,39 @@ function App() {
 
         {/* Tabs */}
         <div className="bg-white rounded-lg shadow-lg border border-gray-200 mb-6">
-          <div className="flex border-b border-gray-200">
+          <div 
+            className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide"
+            style={{ 
+              scrollbarWidth: 'none',
+              msOverflowStyle: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
                 <button
                   key={tab.id}
-                  onClick={() => setActiveTab(tab.id)}
-                  className={`flex-1 flex items-center justify-center gap-2 px-6 py-4 font-medium transition-colors ${
+                  onClick={() => {
+                    setActiveTab(tab.id);
+                    // Scroll active tab into view
+                    const button = document.querySelector(`[data-tab-id="${tab.id}"]`);
+                    if (button) {
+                      button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                    }
+                  }}
+                  data-tab-id={tab.id}
+                  title={tab.label}
+                  className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-2 sm:px-3 md:px-4 lg:px-5 py-3 md:py-4 font-medium transition-colors whitespace-nowrap ${
                     activeTab === tab.id
-                      ? "text-gray-900 border-b-2 border-gray-900"
+                      ? "text-gray-900 border-b-2 border-gray-900 bg-gray-50"
                       : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
                   }`}
                 >
-                  <Icon className="h-5 w-5" />
-                  <span className="hidden sm:inline">{tab.label}</span>
+                  <Icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                  <span className="hidden sm:inline text-xs md:text-sm lg:text-base">
+                    {isLargeScreen ? tab.label : (tab.shortLabel || tab.label)}
+                  </span>
                 </button>
               );
             })}
@@ -140,6 +180,7 @@ function App() {
               <DataVisualization scrapedData={scrapedData} />
             )}
             {activeTab === "analytics" && <AnalyticsDashboard />}
+            {activeTab === "proxy" && <ProxyManager />}
           </div>
         </div>
 
