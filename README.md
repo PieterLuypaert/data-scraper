@@ -21,6 +21,7 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 - **Proxy Support**: Roterende proxies voor anti-bot bypass met health monitoring en automatische failover
 - **Modern UI**: React + Shadcn UI met Tailwind CSS
 - **Responsive Design**: Werkt op alle apparaten
+- **Verbeterde UI/UX**: Tooltips, contextuele hints, help-teksten en empty states voor betere gebruikerservaring
 
 ## Project Structuur
 
@@ -134,45 +135,63 @@ De server serveert dan zowel de API als de React app op `http://localhost:3001`
 
 ### Normale Scraping
 
-1. Ga naar de "Scrapen" tab
-2. Voer een URL in (bijvoorbeeld: `https://example.com`)
-3. Klik op "Send" om de website te scrapen
-4. Bekijk de gedetailleerde resultaten
+1. Ga naar de "Scrapen" tab (hover over tabs voor uitleg)
+2. Lees de help-tekst bovenaan voor context
+3. Voer een URL in (bijvoorbeeld: `https://example.com`)
+4. Gebruik de info badges (?) voor uitleg bij velden
+5. Klik op "Scrapen" om de website te scrapen
+6. Bekijk de gedetailleerde resultaten
 
 De applicatie detecteert automatisch of een site JavaScript-rendering nodig heeft (zoals bol.com, Amazon) en gebruikt dan Puppeteer. Voor simpele sites wordt Cheerio gebruikt.
 
+**Tip**: Hover over knoppen en velden voor tooltips met extra informatie.
+
 ### Website Crawling
 
-1. Ga naar de "Crawlen" tab
-2. Voer een start URL in (bijvoorbeeld: `https://example.com`)
-3. Optioneel: pas de crawl opties aan:
+1. Ga naar de "Crawlen" tab (hover voor uitleg over crawling)
+2. Lees de tip bovenaan voor best practices
+3. Voer een start URL in (bijvoorbeeld: `https://example.com`)
+4. Optioneel: pas de crawl opties aan (gebruik info badges voor uitleg):
    - Max Pagina's: Maximum aantal pagina's om te scrapen (standaard: 50)
+     - Info badge legt uit: hogere waarden = langere wachttijd
    - Max Diepte: Hoe diep te crawlen vanaf start URL (standaard: 3)
+     - Info badge legt uit: diepte 1 = alleen startpagina, diepte 2 = startpagina + directe links, etc.
    - Vertraging: Wachttijd tussen requests in milliseconden (standaard: 1000ms)
+     - Info badge legt uit: hogere waarden = respectvoller voor server, maar langzamer
    - Alleen zelfde domein: Alleen links binnen hetzelfde domein volgen
    - Inclusief subdomeinen: Ook subdomeinen toestaan
    - Volg externe links: Ook links naar andere websites volgen
-4. Klik op "Start Crawl"
-5. De crawler scrapet automatisch alle gevonden pagina's
+5. Klik op "Start Crawl" (hover voor tooltip)
+6. De crawler scrapet automatisch alle gevonden pagina's
+
+**Tip**: Start met een klein aantal pagina's (10-20) om te testen. Grote crawls kunnen lang duren en veel geheugen gebruiken.
 
 ### Custom CSS Selectors
 
-1. Ga naar de "Custom Selectors" tab
-2. Voer een URL in
-3. Voeg selectors toe:
-   - Gebruik de "Selector Toevoegen" knop om handmatig selectors toe te voegen
+1. Ga naar de "Custom Selectors" tab (hover voor uitleg over CSS selectors)
+2. Lees de help-tekst over wat CSS selectors zijn
+3. Voer een URL in
+4. Voeg selectors toe:
+   - Gebruik de "Selector Toevoegen" knop (met tooltip) om handmatig selectors toe te voegen
    - Of gebruik een template selector (bijvoorbeeld "Afbeeldingen", "Meta Description", "Product Namen")
-4. Optioneel: test individuele selectors met de "Test" knop
-5. Klik op "Scrape met Selectors" om alle selectors uit te voeren
-6. Bekijk de resultaten per selector
+   - Info badges bij "Naam" en "CSS Selector" velden geven uitleg
+5. Optioneel: test individuele selectors met de "Test" knop
+6. Klik op "Scrape met Selectors" om alle selectors uit te voeren
+7. Bekijk de resultaten per selector
+
+**Tip**: CSS selectors zijn patronen om elementen te vinden. Bijvoorbeeld: `.product-title` voor elementen met class "product-title", of `h1` voor alle H1 headings.
 
 ### Bulk Scraping
 
-1. Ga naar de "Bulk Scrapen" tab
-2. Voeg meerdere URLs toe met de "URL Toevoegen" knop
-3. Klik op "Start Bulk Scraping"
-4. Bekijk de progress en resultaten per URL
-5. Export alle resultaten in bulk
+1. Ga naar de "Bulk Scrapen" tab (hover voor uitleg)
+2. Lees de help-tekst over hoe bulk scraping werkt
+3. Voeg meerdere URLs toe met de "URL Toevoegen" knop (met tooltip)
+4. Gebruik de info badge voor uitleg over het toevoegen van URLs
+5. Klik op "Start Bulk Scraping" (hover voor tooltip met aantal URLs)
+6. Bekijk de progress en resultaten per URL
+7. Export alle resultaten in bulk
+
+**Tip**: Elke URL wordt onafhankelijk gescraped. Resultaten worden automatisch opgeslagen in de geschiedenis.
 
 ### Change Detection
 
@@ -187,11 +206,17 @@ De applicatie detecteert automatisch of een site JavaScript-rendering nodig heef
 
 ### Geschiedenis
 
-1. Ga naar de "Geschiedenis" tab
+1. Ga naar de "Geschiedenis" tab (hover voor uitleg)
 2. Bekijk alle eerdere scrapes
-3. Selecteer items voor bulk export of verwijdering
+   - Als er geen geschiedenis is, zie je een empty state met instructies
+3. Selecteer items voor bulk export of verwijdering:
+   - Gebruik de selecteer-knop voor individuele items
+   - Of gebruik "Selecteer alle items" (met tooltip)
 4. Klik op een item om de resultaten te bekijken
-5. Gebruik "Bulk Verwijderen" om meerdere items tegelijk te verwijderen
+5. Gebruik export knoppen (met tooltips) om geselecteerde items te exporteren
+6. Gebruik "Verwijder" of "Wis Alles" (met tooltips) om items te verwijderen
+
+**Tip**: Alle gescrapede websites worden automatisch opgeslagen. Klik op een item om de details te bekijken.
 
 ### Analytics
 
@@ -334,7 +359,12 @@ De applicatie scrapet alle beschikbare data van een website:
 ### Export Gebruik
 
 1. In de resultaten: gebruik de export knoppen bovenaan (JSON, CSV, Excel, PDF)
+   - Hover over elke knop voor een tooltip met uitleg
+   - Voor crawl resultaten: tooltips geven aan dat alle pagina's worden geëxporteerd
 2. In geschiedenis: selecteer items en gebruik "Export JSON", "Export CSV" of "Export Excel"
+   - Elke export knop heeft een tooltip met uitleg
+
+**Tip**: Excel en PDF exports voor crawls bevatten meerdere sheets/pagina's met alle data van alle pagina's.
 
 ### Excel Export Features
 
@@ -380,6 +410,47 @@ De applicatie scrapet alle beschikbare data van een website:
 - Meeste/Minste links
 - Meeste/Minste afbeeldingen
 - Datum (nieuwste/oudste)
+
+## UI/UX Features
+
+De applicatie bevat uitgebreide UI/UX verbeteringen voor een betere gebruikerservaring:
+
+### Tooltips
+
+- **Tab Tooltips**: Hover over elke tab in de navigatie voor een korte uitleg van wat die tab doet
+- **Knop Tooltips**: Hover over knoppen (zoals export, verwijder, etc.) voor uitleg
+- **Contextuele Tooltips**: Tooltips verschijnen automatisch bij hover over belangrijke elementen
+
+### Info Badges
+
+- **Info Icons (?)** naast labels en velden voor extra uitleg
+- Klik of hover over de badge voor gedetailleerde informatie
+- Helpt gebruikers begrijpen wat elk veld doet
+
+### Help Teksten
+
+- **Contextuele Help**: Help-teksten bovenaan formulieren met uitleg over functionaliteit
+- **Tips**: Gele tip-boxen met best practices en aanbevelingen
+- **Waarschuwingen**: Oranje waarschuwingen voor belangrijke informatie
+
+### Empty States
+
+- **Instructieve Empty States**: Wanneer er geen data is, zie je duidelijke instructies
+- **Actie Suggesties**: Empty states suggereren wat je kunt doen om te beginnen
+- **Visuele Icons**: Icons maken het duidelijk wat er ontbreekt
+
+### Visuele Feedback
+
+- **Duidelijke Labels**: Alle formuliervelden hebben beschrijvende labels
+- **Placeholder Teksten**: Placeholders geven voorbeelden van verwachte input
+- **Status Indicators**: Duidelijke visuele feedback voor loading, success, errors
+- **Progress Bars**: Visuele progress indicators voor lange operaties
+
+### Navigatie
+
+- **Beschrijvende Header**: Header bevat een korte beschrijving van de applicatie
+- **Tab Uitleg**: Elke tab heeft een tooltip met uitleg
+- **Visuele Hiërarchie**: Duidelijke visuele hiërarchie maakt navigatie intuïtief
 
 ## Technologie
 
@@ -462,17 +533,19 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 
 #### Components
 
-- `src/components/ScrapeForm.jsx` - Form component voor normale scraping
-- `src/components/CrawlForm.jsx` - Website crawler form component
-- `src/components/CustomSelector.jsx` - Custom CSS selector UI met templates
-- `src/components/ScrapeResultsExtended.jsx` - Uitgebreide resultaten weergave
-- `src/components/BulkScrapeForm.jsx` - Bulk scraping component
+- `src/components/ScrapeForm.jsx` - Form component voor normale scraping met help-teksten en tooltips
+- `src/components/CrawlForm.jsx` - Website crawler form component met contextuele hints
+- `src/components/CustomSelector.jsx` - Custom CSS selector UI met templates en uitleg
+- `src/components/ScrapeResultsExtended.jsx` - Uitgebreide resultaten weergave met export tooltips
+- `src/components/BulkScrapeForm.jsx` - Bulk scraping component met help-teksten
 - `src/components/AnalyticsDashboard.jsx` - Analytics dashboard
-- `src/components/HistoryManager.jsx` - Geschiedenis beheer
+- `src/components/HistoryManager.jsx` - Geschiedenis beheer met empty states en tooltips
 - `src/components/ChangeDetection.jsx` - Change detection UI
 - `src/components/SEOAnalysis.jsx` - SEO analysis component met score en aanbevelingen
 - `src/components/DataVisualization.jsx` - Data visualization met charts, word clouds en link graphs
 - `src/components/SearchAndFilter.jsx` - Zoeken en filteren component
+- `src/components/ui/tooltip.jsx` - Tooltip component voor hover uitleg
+- `src/components/ui/help-text.jsx` - Help tekst en empty state componenten
 
 ## API Endpoints
 
@@ -752,6 +825,8 @@ http://user:pass@proxy.example.com:8080
 - Crawl sessies worden automatisch opgeschoond na 30 seconden
 - SEO analyse wordt automatisch uitgevoerd bij elke scrape
 - Proxy support is optioneel en kan worden ingeschakeld via configuratie
+- UI/UX features zoals tooltips, help-teksten en empty states maken de applicatie gebruiksvriendelijker
+- Hover over elementen voor extra informatie en contextuele hints
 
 ## Browser Ondersteuning
 
