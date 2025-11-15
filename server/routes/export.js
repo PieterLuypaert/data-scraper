@@ -212,7 +212,8 @@ async function exportToPDF(req, res) {
       doc.moveDown(0.5);
       doc.fontSize(10);
       
-      data.links.slice(0, 50).forEach((link, index) => {
+      // Export ALL links - no limit
+      data.links.forEach((link, index) => {
         try {
           if (doc.y > 700) {
             doc.addPage();
@@ -228,11 +229,6 @@ async function exportToPDF(req, res) {
           // Skip this link and continue
         }
       });
-      
-      if (data.links.length > 50) {
-        doc.moveDown();
-        doc.text(`... and ${data.links.length - 50} more links`);
-      }
     }
     
     // Images section
@@ -242,7 +238,8 @@ async function exportToPDF(req, res) {
       doc.moveDown(0.5);
       doc.fontSize(10);
       
-      data.images.slice(0, 20).forEach((img, index) => {
+      // Export ALL images - no limit
+      data.images.forEach((img, index) => {
         try {
           if (doc.y > 700) {
             doc.addPage();
@@ -258,11 +255,6 @@ async function exportToPDF(req, res) {
           // Skip this image and continue
         }
       });
-      
-      if (data.images.length > 20) {
-        doc.moveDown();
-        doc.text(`... and ${data.images.length - 20} more images`);
-      }
     }
     
     // Headings section
@@ -424,9 +416,322 @@ async function batchExportToExcel(req, res) {
   }
 }
 
+/**
+ * Export crawl data (multiple pages) to Excel
+ */
+async function exportCrawlToExcel(req, res) {
+  try {
+    const { data } = req.body;
+    
+    if (!data || !data.pages || !Array.isArray(data.pages)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Crawl data with pages array is required'
+      });
+    }
+    
+    const workbook = XLSX.utils.book_new();
+    
+    // Summary sheet
+    const summaryData = [
+      ['Property', 'Value'],
+      ['Start URL', data.startUrl || ''],
+      ['Total Pages', data.totalPages || data.pages.length],
+      ['Total Links', data.summary?.totalLinks || 0],
+      ['Total Images', data.summary?.totalImages || 0],
+      ['Total Headings', data.summary?.totalHeadings || 0],
+    ];
+    const summarySheet = XLSX.utils.aoa_to_sheet(summaryData);
+    XLSX.utils.book_append_sheet(workbook, summarySheet, 'Summary');
+    
+    // All Pages Overview sheet
+    const pagesOverview = data.pages.map((page, index) => ({
+      'Page #': index + 1,
+      'URL': page.url || '',
+      'Title': page.title || '',
+      'Links': page.links?.length || 0,
+      'Images': page.images?.length || 0,
+      'Headings': Array.isArray(page.headings) ? page.headings.length : (page.headings ? Object.values(page.headings).reduce((sum, arr) => sum + arr.length, 0) : 0),
+      'Crawl Depth': page.crawlDepth || '',
+      'Crawl Order': page.crawlOrder || index + 1,
+    }));
+    const pagesOverviewSheet = XLSX.utils.json_to_sheet(pagesOverview);
+    XLSX.utils.book_append_sheet(workbook, pagesOverviewSheet, 'All Pages');
+    
+    // Individual page sheets
+    data.pages.forEach((page, index) => {
+      const pageNumber = index + 1;
+      const sheetName = `Page ${pageNumber}`.substring(0, 31); // Excel sheet name limit
+      const pageWorkbook = convertToExcelData(page);
+      
+      // Copy all sheets from page workbook to main workbook with prefixed names
+      pageWorkbook.SheetNames.forEach(sheetName => {
+        const sheet = pageWorkbook.Sheets[sheetName];
+        const newSheetName = `P${pageNumber}_${sheetName}`.substring(0, 31);
+        XLSX.utils.book_append_sheet(workbook, sheet, newSheetName);
+      });
+    });
+    
+    // Combined Links sheet (all pages)
+    const allLinks = [];
+    data.pages.forEach((page, pageIndex) => {
+      if (page.links && page.links.length > 0) {
+        page.links.forEach(link => {
+          allLinks.push({
+            'Page #': pageIndex + 1,
+            'Page URL': page.url || '',
+            'Text': link.text || '',
+            'URL': link.href || '',
+            'Title': link.title || '',
+            'Target': link.target || '',
+            'Rel': link.rel || '',
+          });
+        });
+      }
+    });
+    if (allLinks.length > 0) {
+      const allLinksSheet = XLSX.utils.json_to_sheet(allLinks);
+      XLSX.utils.book_append_sheet(workbook, allLinksSheet, 'All Links');
+    }
+    
+    // Combined Images sheet (all pages)
+    const allImages = [];
+    data.pages.forEach((page, pageIndex) => {
+      if (page.images && page.images.length > 0) {
+        page.images.forEach(img => {
+          allImages.push({
+            'Page #': pageIndex + 1,
+            'Page URL': page.url || '',
+            'Alt Text': img.alt || '',
+            'Source': img.src || '',
+            'Width': img.width || '',
+            'Height': img.height || '',
+          });
+        });
+      }
+    });
+    if (allImages.length > 0) {
+      const allImagesSheet = XLSX.utils.json_to_sheet(allImages);
+      XLSX.utils.book_append_sheet(workbook, allImagesSheet, 'All Images');
+    }
+    
+    const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
+    const filename = `crawl-${data.startUrl?.replace(/[^a-z0-9]/gi, '-') || 'data'}-${Date.now()}.xlsx`;
+    
+    res.setHeader('Content-Type', 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    res.send(buffer);
+    
+  } catch (error) {
+    console.error('Error exporting crawl to Excel:', error);
+    res.status(500).json({
+      success: false,
+      error: error.message
+    });
+  }
+}
+
+/**
+ * Export crawl data (multiple pages) to PDF
+ */
+async function exportCrawlToPDF(req, res) {
+  let doc;
+  try {
+    const { data } = req.body;
+    
+    if (!data || !data.pages || !Array.isArray(data.pages)) {
+      return res.status(400).json({
+        success: false,
+        error: 'Crawl data with pages array is required'
+      });
+    }
+    
+    doc = new PDFDocument({ margin: 50 });
+    const filename = `crawl-${data.startUrl?.replace(/[^a-z0-9]/gi, '-') || 'data'}-${Date.now()}.pdf`;
+    
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}"`);
+    
+    doc.on('error', (error) => {
+      console.error('PDF generation error:', error);
+      if (!res.headersSent) {
+        res.status(500).json({
+          success: false,
+          error: 'Failed to generate PDF: ' + error.message
+        });
+      }
+    });
+    
+    doc.pipe(res);
+    
+    // Title page
+    doc.fontSize(20).text('Website Crawl Report', { align: 'center' });
+    doc.moveDown();
+    doc.fontSize(12);
+    doc.text(`Start URL: ${data.startUrl || 'N/A'}`);
+    doc.text(`Total Pages: ${data.totalPages || data.pages.length}`);
+    doc.text(`Total Links: ${data.summary?.totalLinks || 0}`);
+    doc.text(`Total Images: ${data.summary?.totalImages || 0}`);
+    doc.text(`Total Headings: ${data.summary?.totalHeadings || 0}`);
+    doc.moveDown();
+    doc.text(`Generated: ${new Date().toISOString()}`);
+    doc.addPage();
+    
+    // Pages Overview
+    doc.fontSize(16).text('Pages Overview', { underline: true });
+    doc.moveDown(0.5);
+    doc.fontSize(10);
+    data.pages.forEach((page, index) => {
+      if (doc.y > 700) {
+        doc.addPage();
+      }
+      doc.fontSize(12).text(`Page ${index + 1}: ${page.title || page.url || 'Untitled'}`, { underline: true });
+      doc.fontSize(10);
+      doc.text(`URL: ${page.url || 'N/A'}`);
+      doc.text(`Links: ${page.links?.length || 0} | Images: ${page.images?.length || 0} | Headings: ${Array.isArray(page.headings) ? page.headings.length : (page.headings ? Object.values(page.headings).reduce((sum, arr) => sum + arr.length, 0) : 0)}`);
+      doc.moveDown();
+    });
+    
+    // Individual pages
+    data.pages.forEach((page, pageIndex) => {
+      doc.addPage();
+      doc.fontSize(18).text(`Page ${pageIndex + 1}`, { underline: true });
+      doc.moveDown();
+      
+      // Page overview
+      doc.fontSize(14).text('Overview', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`URL: ${page.url || 'N/A'}`);
+      doc.text(`Title: ${page.title || 'N/A'}`);
+      doc.text(`Description: ${page.description || 'N/A'}`);
+      doc.moveDown();
+      
+      // Statistics
+      doc.fontSize(14).text('Statistics', { underline: true });
+      doc.moveDown(0.5);
+      doc.fontSize(12);
+      doc.text(`Total Links: ${page.links?.length || 0}`);
+      doc.text(`Total Images: ${page.images?.length || 0}`);
+      doc.text(`Total Headings: ${Array.isArray(page.headings) ? page.headings.length : (page.headings ? Object.values(page.headings).reduce((sum, arr) => sum + arr.length, 0) : 0)}`);
+      doc.text(`Total Paragraphs: ${page.paragraphs?.length || 0}`);
+      doc.moveDown();
+      
+      // Links - export ALL links for each page
+      if (page.links && page.links.length > 0) {
+        doc.addPage();
+        doc.fontSize(16).text('Links', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10);
+        page.links.forEach((link, index) => {
+          if (doc.y > 700) {
+            doc.addPage();
+          }
+          try {
+            const linkText = String(link.text || 'No text').substring(0, 200);
+            doc.text(`${index + 1}. ${linkText}`, { continued: false });
+            const linkUrl = String(link.href || '').substring(0, 500);
+            doc.fontSize(8).fillColor('blue').text(linkUrl, { link: linkUrl });
+            doc.fontSize(10).fillColor('black');
+            doc.moveDown(0.3);
+          } catch (linkError) {
+            console.error('Error adding link to PDF:', linkError);
+          }
+        });
+      }
+      
+      // Images - export ALL images for each page
+      if (page.images && page.images.length > 0) {
+        doc.addPage();
+        doc.fontSize(16).text('Images', { underline: true });
+        doc.moveDown(0.5);
+        doc.fontSize(10);
+        page.images.forEach((img, index) => {
+          if (doc.y > 700) {
+            doc.addPage();
+          }
+          try {
+            const altText = String(img.alt || 'No alt text').substring(0, 200);
+            doc.text(`${index + 1}. ${altText}`);
+            const imgSrc = String(img.src || '').substring(0, 500);
+            doc.fontSize(8).fillColor('blue').text(imgSrc);
+            doc.fontSize(10).fillColor('black');
+            doc.moveDown(0.5);
+          } catch (imgError) {
+            console.error('Error adding image to PDF:', imgError);
+          }
+        });
+      }
+    });
+    
+    // Footer on each page
+    const pageRange = doc.bufferedPageRange();
+    const startPage = pageRange.start || 0;
+    const totalPages = pageRange.count || 1;
+    
+    try {
+      for (let i = startPage; i < startPage + totalPages; i++) {
+        doc.switchToPage(i);
+        doc.fontSize(8)
+          .fillColor('gray')
+          .text(
+            `Page ${i - startPage + 1} of ${totalPages} | Generated by Web Scraper`,
+            { align: 'center', y: doc.page.height - 30 }
+          );
+      }
+    } catch (footerError) {
+      console.error('Error adding footer to PDF:', footerError);
+    }
+    
+    doc.end();
+    
+  } catch (error) {
+    console.error('Error exporting crawl to PDF:', error);
+    
+    if (doc) {
+      try {
+        if (!doc.writableEnded && !doc.destroyed) {
+          if (doc.page) {
+            doc.end();
+          } else {
+            doc.destroy();
+          }
+        }
+      } catch (docError) {
+        console.error('Error ending PDF document:', docError);
+        try {
+          if (!doc.destroyed) {
+            doc.destroy();
+          }
+        } catch (destroyError) {
+          console.error('Error destroying PDF document:', destroyError);
+        }
+      }
+    }
+    
+    if (!res.headersSent) {
+      res.status(500).json({
+        success: false,
+        error: error.message || 'Failed to export crawl PDF'
+      });
+    } else {
+      console.error('Cannot send error response - headers already sent');
+      try {
+        if (!res.finished) {
+          res.end();
+        }
+      } catch (endError) {
+        console.error('Error ending response:', endError);
+      }
+    }
+  }
+}
+
 module.exports = {
   exportToExcel,
   exportToPDF,
-  batchExportToExcel
+  batchExportToExcel,
+  exportCrawlToExcel,
+  exportCrawlToPDF
 };
 

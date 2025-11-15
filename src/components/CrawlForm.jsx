@@ -119,12 +119,24 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                   <Input
                     type="number"
                     min="1"
-                    max="200"
+                    max="1000"
                     value={options.maxPages}
                     onChange={(e) => setOptions({ ...options, maxPages: parseInt(e.target.value) || 50 })}
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Maximum aantal pagina's om te scrapen</p>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Maximum aantal pagina's om te scrapen
+                    {options.maxPages > 100 && (
+                      <span className="block mt-1 text-yellow-600 font-medium">
+                        ⚠ Grote crawl: Dit kan lang duren en veel geheugen gebruiken
+                      </span>
+                    )}
+                    {options.maxPages > 500 && (
+                      <span className="block mt-1 text-orange-600 font-medium">
+                        ⚠⚠ Zeer grote crawl: Export kan lang duren of falen bij zeer grote datasets
+                      </span>
+                    )}
+                  </p>
                 </div>
 
                 <div>

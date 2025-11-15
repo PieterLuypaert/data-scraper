@@ -21,6 +21,8 @@ const {
   exportToExcel,
   exportToPDF,
   batchExportToExcel,
+  exportCrawlToExcel,
+  exportCrawlToPDF,
 } = require("./server/routes/export");
 
 const app = express();
@@ -34,6 +36,8 @@ const exportBodyParser = express.json({ limit: "100mb" });
 app.post("/api/export/excel", exportBodyParser, exportToExcel);
 app.post("/api/export/pdf", exportBodyParser, exportToPDF);
 app.post("/api/export/batch-excel", exportBodyParser, batchExportToExcel);
+app.post("/api/export/crawl-excel", exportBodyParser, exportCrawlToExcel);
+app.post("/api/export/crawl-pdf", exportBodyParser, exportCrawlToPDF);
 
 // Default body parser with smaller limit for other routes
 app.use(express.json({ limit: "10mb" }));

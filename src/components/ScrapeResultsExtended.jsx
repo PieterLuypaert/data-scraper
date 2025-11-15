@@ -6,7 +6,7 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { exportToJSON, exportToCSV, exportToExcel, exportToPDF } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
 
-export function ScrapeResultsExtended({ data }) {
+export function ScrapeResultsExtended({ data, crawlData }) {
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -28,6 +28,71 @@ export function ScrapeResultsExtended({ data }) {
 
   // Check if this is custom selector results
   const isCustomResults = data.customResults && !data.title?.includes('Custom Selector');
+
+  // Combine all images/links from crawl pages if crawlData exists
+  const combinedData = useMemo(() => {
+    // Check if this is a crawl result (either via crawlData or data.crawlInfo)
+    const isCrawlResult = (crawlData && crawlData.pages && Array.isArray(crawlData.pages) && crawlData.pages.length > 1) ||
+                          (data.crawlInfo && data.crawlInfo.totalPages > 1);
+    
+    // Check if we have crawl data with multiple pages
+    if (isCrawlResult && crawlData && crawlData.pages && Array.isArray(crawlData.pages) && crawlData.pages.length > 1) {
+      console.log(`[Crawl] Combining data from ${crawlData.pages.length} pages`);
+      console.log(`[Crawl] crawlData:`, crawlData);
+      
+      // Combine all images from all pages
+      const allImages = [];
+      let totalImagesFromPages = 0;
+      crawlData.pages.forEach((page, pageIndex) => {
+        if (page.images && Array.isArray(page.images)) {
+          totalImagesFromPages += page.images.length;
+          if (page.images.length > 0) {
+            page.images.forEach(img => {
+              allImages.push({
+                ...img,
+                _pageNumber: pageIndex + 1,
+                _pageUrl: page.url,
+              });
+            });
+          }
+        }
+      });
+
+      // Combine all links from all pages
+      const allLinks = [];
+      let totalLinksFromPages = 0;
+      crawlData.pages.forEach((page, pageIndex) => {
+        if (page.links && Array.isArray(page.links)) {
+          totalLinksFromPages += page.links.length;
+          if (page.links.length > 0) {
+            page.links.forEach(link => {
+              allLinks.push({
+                ...link,
+                _pageNumber: pageIndex + 1,
+                _pageUrl: page.url,
+              });
+            });
+          }
+        }
+      });
+
+      console.log(`[Crawl] Found ${totalImagesFromPages} total images across pages`);
+      console.log(`[Crawl] Combined ${allImages.length} images and ${allLinks.length} links from ${crawlData.pages.length} pages`);
+
+      // Return data with combined arrays
+      return {
+        ...data,
+        images: allImages.length > 0 ? allImages : (data.images || []),
+        links: allLinks.length > 0 ? allLinks : (data.links || []),
+      };
+    } else {
+      console.log(`[Crawl] No crawl data or single page. crawlData:`, crawlData);
+      console.log(`[Crawl] Using data.images:`, data.images?.length || 0);
+    }
+    
+    // No crawl data or single page - return original data
+    return data;
+  }, [data, crawlData]);
 
   const toggleSection = (section) => {
     setExpandedSections(prev => ({
@@ -76,7 +141,12 @@ export function ScrapeResultsExtended({ data }) {
 
   const handleExportExcel = async () => {
     try {
-      await exportToExcel(data, `scrape-detailed-${Date.now()}`);
+      // If crawlData exists with pages, export all pages
+      if (crawlData && crawlData.pages && crawlData.pages.length > 1) {
+        await exportToExcel(crawlData, `crawl-all-pages-${Date.now()}`);
+      } else {
+        await exportToExcel(data, `scrape-detailed-${Date.now()}`);
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -84,7 +154,12 @@ export function ScrapeResultsExtended({ data }) {
 
   const handleExportPDF = async () => {
     try {
-      await exportToPDF(data, `scrape-detailed-${Date.now()}`);
+      // If crawlData exists with pages, export all pages
+      if (crawlData && crawlData.pages && crawlData.pages.length > 1) {
+        await exportToPDF(crawlData, `crawl-all-pages-${Date.now()}`);
+      } else {
+        await exportToPDF(data, `scrape-detailed-${Date.now()}`);
+      }
     } catch (err) {
       alert(err.message);
     }
@@ -172,10 +247,22 @@ export function ScrapeResultsExtended({ data }) {
       {/* Header with Export Actions */}
       <div className="flex flex-wrap justify-between items-center gap-3 mb-3">
         <div>
-          <h2 className="text-3xl font-bold text-gray-900">Gedetailleerde Scraped Data</h2>
+          <h2 className="text-3xl font-bold text-gray-900">
+            {crawlData && crawlData.totalPages > 1 ? `Crawl Resultaten (${crawlData.totalPages} pagina's)` : 'Gedetailleerde Scraped Data'}
+          </h2>
           {data.statistics && (
             <p className="text-sm text-gray-600 mt-1">
               {data.statistics.totalLinks} links • {data.statistics.totalImages} afbeeldingen • {data.statistics.totalHeadings} headings
+              {crawlData && crawlData.totalPages > 1 && (
+                <span className="ml-2 text-xs text-gray-500">
+                  (totaal over {crawlData.totalPages} pagina's)
+                </span>
+              )}
+            </p>
+          )}
+          {data.crawlInfo && (
+            <p className="text-xs text-gray-500 mt-1">
+              Start URL: {data.crawlInfo.startUrl} • {data.crawlInfo.totalPages} pagina's gecrawld
             </p>
           )}
         </div>
@@ -858,17 +945,22 @@ export function ScrapeResultsExtended({ data }) {
       )}
 
       {/* Links */}
-      {filters.showLinks && data.links && data.links.length > 0 && (
+      {filters.showLinks && combinedData.links && combinedData.links.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <LinkIcon className="h-4 w-4" />
-              Links ({data.links.length})
+              Links ({combinedData.links.length})
+              {crawlData && crawlData.totalPages > 1 && (
+                <span className="text-sm font-normal text-gray-500">
+                  (van {crawlData.totalPages} pagina's)
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="space-y-1.5 max-h-96 overflow-y-auto">
-              {data.links.map((link, i) => (
+              {combinedData.links.map((link, i) => (
                 <a 
                   key={i} 
                   href={typeof link === 'string' ? link : link.href} 
@@ -877,6 +969,11 @@ export function ScrapeResultsExtended({ data }) {
                   className="block p-2 bg-gray-50 rounded border border-gray-200 hover:bg-gray-100 transition-colors"
                 >
                   <div className="text-sm text-gray-900 line-clamp-1" dangerouslySetInnerHTML={{ __html: highlightText(typeof link === 'string' ? link : (link.text || link.href)) }} />
+                  {link._pageNumber && (
+                    <div className="text-xs text-gray-500 mt-1">
+                      Pagina {link._pageNumber}
+                    </div>
+                  )}
                 </a>
               ))}
             </div>
@@ -885,17 +982,22 @@ export function ScrapeResultsExtended({ data }) {
       )}
 
       {/* Images */}
-      {filters.showImages && data.images && data.images.length > 0 && (
+      {filters.showImages && combinedData.images && combinedData.images.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="flex items-center gap-2 text-lg">
               <Image className="h-4 w-4" />
-              Afbeeldingen ({data.images.length})
+              Afbeeldingen ({combinedData.images.length})
+              {crawlData && crawlData.totalPages > 1 && (
+                <span className="text-sm font-normal text-gray-500">
+                  (van {crawlData.totalPages} pagina's)
+                </span>
+              )}
             </CardTitle>
           </CardHeader>
           <CardContent className="pt-0">
             <div className="grid grid-cols-2 md:grid-cols-4 gap-2 max-h-96 overflow-y-auto">
-              {data.images.map((img, i) => (
+              {combinedData.images.map((img, i) => (
                 <div key={i} className="space-y-2">
                   <div className="relative aspect-square bg-gray-100 rounded border border-gray-200 overflow-hidden">
                     <img 
@@ -916,6 +1018,11 @@ export function ScrapeResultsExtended({ data }) {
                   >
                     {typeof img === 'string' ? img : img.src}
                   </a>
+                  {img._pageNumber && (
+                    <div className="text-xs text-gray-500">
+                      Pagina {img._pageNumber}
+                    </div>
+                  )}
                 </div>
               ))}
             </div>

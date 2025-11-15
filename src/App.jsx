@@ -27,6 +27,7 @@ import {
 
 function App() {
   const [scrapedData, setScrapedData] = useState(null);
+  const [crawlData, setCrawlData] = useState(null); // Store full crawl data with all pages
   const [activeTab, setActiveTab] = useState("scrape");
   const [currentUrl, setCurrentUrl] = useState(null);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
@@ -52,6 +53,11 @@ function App() {
   const handleScrapeSuccess = (data, url) => {
     setScrapedData(data);
     setCurrentUrl(url || data.url);
+    // Only reset crawlData if this is explicitly NOT a crawl result
+    // Keep crawlData if it exists and this might be related to a crawl
+    if (!data.crawlInfo && (!data.pages || !Array.isArray(data.pages) || data.pages.length <= 1)) {
+      setCrawlData(null);
+    }
     setTimeout(() => {
       const resultsElement = document.getElementById("results");
       if (resultsElement) {
@@ -152,9 +158,42 @@ function App() {
             {activeTab === "crawl" && (
               <CrawlForm
                 onCrawlSuccess={(data) => {
-                  // Show summary or first page
+                  // Store full crawl data with all pages for export
+                  setCrawlData(data);
+                  // Show summary or first page for display
                   if (data.pages && data.pages.length > 0) {
-                    handleScrapeSuccess(data.pages[0]);
+                    // Merge crawl summary statistics into first page data for display
+                    const firstPage = { ...data.pages[0] };
+                    if (data.summary) {
+                      // Use crawl summary statistics (totals across all pages)
+                      firstPage.statistics = {
+                        ...firstPage.statistics,
+                        // Override with crawl summary totals
+                        totalLinks: data.summary.totalLinks || 0,
+                        totalImages: data.summary.totalImages || 0,
+                        totalHeadings: data.summary.totalHeadings || 0,
+                        totalParagraphs: data.summary.totalParagraphs || 0,
+                        totalTables: data.summary.totalTables || 0,
+                        totalForms: data.summary.totalForms || 0,
+                        totalButtons: data.summary.totalButtons || 0,
+                        totalVideos: data.summary.totalVideos || 0,
+                        totalScripts: data.summary.totalScripts || 0,
+                        totalStylesheets: data.summary.totalStylesheets || 0,
+                        // Keep other statistics from first page if not in summary
+                        totalAudios: firstPage.statistics?.totalAudios || 0,
+                        totalIframes: firstPage.statistics?.totalIframes || 0,
+                        totalSVGs: firstPage.statistics?.totalSVGs || 0,
+                        totalCanvases: firstPage.statistics?.totalCanvases || 0,
+                        totalDataAttributes: firstPage.statistics?.totalDataAttributes || 0,
+                        totalComments: firstPage.statistics?.totalComments || 0,
+                      };
+                      // Add crawl info
+                      firstPage.crawlInfo = {
+                        totalPages: data.totalPages,
+                        startUrl: data.startUrl,
+                      };
+                    }
+                    handleScrapeSuccess(firstPage);
                   } else {
                     handleScrapeSuccess(data);
                   }
@@ -185,9 +224,9 @@ function App() {
         </div>
 
         {/* Results */}
-        {scrapedData && (activeTab === "scrape" || activeTab === "custom") && (
+        {scrapedData && (activeTab === "scrape" || activeTab === "custom" || activeTab === "crawl") && (
           <div id="results" className="mt-8">
-            <ScrapeResultsExtended data={scrapedData} />
+            <ScrapeResultsExtended data={scrapedData} crawlData={crawlData} />
           </div>
         )}
 

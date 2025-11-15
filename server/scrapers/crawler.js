@@ -167,19 +167,29 @@ async function crawlWebsite(startUrl, options = {}) {
     onProgress(scrapedPages.length, maxPages, `Crawl completed! Scraped ${scrapedPages.length} pages.`, null);
   }
 
+  // Calculate comprehensive summary statistics across all pages
+  const summary = {
+    totalLinks: scrapedPages.reduce((sum, page) => sum + (page.links?.length || 0), 0),
+    totalImages: scrapedPages.reduce((sum, page) => sum + (page.images?.length || 0), 0),
+    totalHeadings: scrapedPages.reduce((sum, page) => {
+      if (!page.headings) return sum;
+      return sum + Object.values(page.headings).reduce((s, arr) => s + arr.length, 0);
+    }, 0),
+    totalParagraphs: scrapedPages.reduce((sum, page) => sum + (page.paragraphs?.length || 0), 0),
+    totalTables: scrapedPages.reduce((sum, page) => sum + (page.tables?.length || 0), 0),
+    totalForms: scrapedPages.reduce((sum, page) => sum + (page.forms?.length || 0), 0),
+    totalButtons: scrapedPages.reduce((sum, page) => sum + (page.buttons?.length || 0), 0),
+    totalVideos: scrapedPages.reduce((sum, page) => sum + (page.videos?.length || 0), 0),
+    totalScripts: scrapedPages.reduce((sum, page) => sum + (page.scripts?.length || 0), 0),
+    totalStylesheets: scrapedPages.reduce((sum, page) => sum + (page.stylesheets?.length || 0), 0),
+  };
+
   return {
     startUrl,
     totalPages: scrapedPages.length,
     pages: scrapedPages,
     visitedUrls: Array.from(visitedUrls),
-    summary: {
-      totalLinks: scrapedPages.reduce((sum, page) => sum + (page.links?.length || 0), 0),
-      totalImages: scrapedPages.reduce((sum, page) => sum + (page.images?.length || 0), 0),
-      totalHeadings: scrapedPages.reduce((sum, page) => {
-        if (!page.headings) return sum;
-        return sum + Object.values(page.headings).reduce((s, arr) => s + arr.length, 0);
-      }, 0)
-    }
+    summary
   };
 }
 

@@ -140,32 +140,9 @@ function prepareDataForExport(data) {
     }
   });
   
-  // Limit very large arrays to prevent payload issues
-  // Keep enough data for useful export but prevent 413 errors
-  // Very conservative limits to ensure payload stays under ~1MB
-  const arrayLimits = {
-    links: 50,
-    images: 30,
-    headings: 30,
-    paragraphs: 50,
-    tables: 20,
-    forms: 20,
-    videos: 20,
-    scripts: 20,
-    stylesheets: 20,
-    metaTags: 30,
-  };
-  
-  Object.keys(arrayLimits).forEach(key => {
-    if (prepared[key] && Array.isArray(prepared[key])) {
-      const limit = arrayLimits[key];
-      if (prepared[key].length > limit) {
-        prepared[`${key}_total`] = prepared[key].length;
-        prepared[key] = prepared[key].slice(0, limit);
-        prepared[`${key}_truncated`] = true;
-      }
-    }
-  });
+  // Don't limit arrays - export all data
+  // Arrays are only limited during progressive compression if payload is too large (>10MB)
+  // This ensures all data is exported by default
   
   // Also limit string fields that might be very long
   const stringFieldsToLimit = ['description', 'keywords', 'ogDescription'];
@@ -181,11 +158,18 @@ function prepareDataForExport(data) {
 
 /**
  * Export data to Excel file
- * @param {Object} data - Data to export
+ * @param {Object} data - Data to export (can be single page or crawl data with pages array)
  * @param {string} filename - Filename (without extension)
  */
 export async function exportToExcel(data, filename = 'scraped-data') {
   try {
+    // Check if this is crawl data with multiple pages
+    if (data.pages && Array.isArray(data.pages) && data.pages.length > 1) {
+      // Export all pages from crawl
+      return await exportCrawlToExcel(data, filename);
+    }
+    
+    // Single page export
     let preparedData = prepareDataForExport(data);
     
     // Check payload size before sending and compress if needed
@@ -265,11 +249,18 @@ export async function exportToExcel(data, filename = 'scraped-data') {
 
 /**
  * Export data to PDF file
- * @param {Object} data - Data to export
+ * @param {Object} data - Data to export (can be single page or crawl data with pages array)
  * @param {string} filename - Filename (without extension)
  */
 export async function exportToPDF(data, filename = 'scraped-data') {
   try {
+    // Check if this is crawl data with multiple pages
+    if (data.pages && Array.isArray(data.pages) && data.pages.length > 1) {
+      // Export all pages from crawl
+      return await exportCrawlToPDF(data, filename);
+    }
+    
+    // Single page export
     // Remove screenshot from payload to avoid 413 errors
     // Screenshots are typically very large as base64 strings
     let preparedData = prepareDataForExport(data);
@@ -400,6 +391,230 @@ export async function batchExport(scrapes, format = 'json', filename = 'batch-ex
     await batchExportToExcel(scrapes, filename);
   } else {
     throw new Error('Invalid format. Use "json", "csv", or "excel"');
+  }
+}
+
+/**
+ * Export crawl data (multiple pages) to Excel
+ * @param {Object} crawlData - Crawl data with pages array
+ * @param {string} filename - Filename
+ */
+async function exportCrawlToExcel(crawlData, filename = 'crawl-data') {
+  try {
+    // Prepare all pages for export
+    const preparedPages = crawlData.pages.map(page => prepareDataForExport(page));
+    
+    // Create crawl export data structure
+    const exportData = {
+      startUrl: crawlData.startUrl,
+      totalPages: crawlData.totalPages,
+      pages: preparedPages,
+      summary: crawlData.summary,
+      visitedUrls: crawlData.visitedUrls
+    };
+    
+    // Check payload size
+    let payload = JSON.stringify({ data: exportData });
+    let payloadSizeMB = payload.length / (1024 * 1024);
+    
+    // Progressive compression if needed
+    if (payloadSizeMB > 10) {
+      console.warn(`Crawl payload size is ${payloadSizeMB.toFixed(2)}MB, compressing...`);
+      const compressionLevels = [
+        { threshold: 10, maxArraySize: 100 },
+        { threshold: 20, maxArraySize: 50 },
+        { threshold: 50, maxArraySize: 25 },
+      ];
+      
+      for (const level of compressionLevels) {
+        if (payloadSizeMB > level.threshold) {
+          console.warn(`Compressing to max ${level.maxArraySize} items per array...`);
+          const moreCompressed = {
+            ...exportData,
+            pages: exportData.pages.map(page => {
+              const compressed = { ...page };
+              Object.keys(compressed).forEach(key => {
+                if (Array.isArray(compressed[key]) && compressed[key].length > level.maxArraySize) {
+                  compressed[`${key}_total`] = compressed[key].length;
+                  compressed[key] = compressed[key].slice(0, level.maxArraySize);
+                  compressed[`${key}_truncated`] = true;
+                }
+              });
+              return compressed;
+            })
+          };
+          exportData.pages = moreCompressed.pages;
+          payload = JSON.stringify({ data: exportData });
+          payloadSizeMB = payload.length / (1024 * 1024);
+        }
+      }
+    }
+    
+    if (payloadSizeMB > 1) {
+      console.log(`Exporting crawl with payload size: ${payloadSizeMB.toFixed(2)}MB`);
+    }
+    
+    // Warn user if payload is very large
+    if (payloadSizeMB > 50) {
+      console.warn(`⚠️ Very large crawl export: ${payloadSizeMB.toFixed(2)}MB. This may take a while...`);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/export/crawl-excel`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: payload,
+    });
+
+    if (!response.ok) {
+      if (response.status === 413) {
+        throw new Error(`Server weigert export: payload te groot (${payloadSizeMB.toFixed(2)}MB). De server heeft een limiet ingesteld. Probeer een kleinere dataset of verwijder grote arrays.`);
+      }
+      
+      let errorData;
+      try {
+        errorData = await response.json();
+      } catch (jsonError) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+      throw new Error(errorData.error || 'Failed to export crawl Excel');
+    }
+
+    const blob = await response.blob();
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.xlsx`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    throw new Error('Failed to export crawl Excel: ' + error.message);
+  }
+}
+
+/**
+ * Export crawl data (multiple pages) to PDF
+ * @param {Object} crawlData - Crawl data with pages array
+ * @param {string} filename - Filename
+ */
+async function exportCrawlToPDF(crawlData, filename = 'crawl-data') {
+  try {
+    // Prepare all pages for export
+    const preparedPages = crawlData.pages.map(page => prepareDataForExport(page));
+    
+    // Create crawl export data structure
+    const exportData = {
+      startUrl: crawlData.startUrl,
+      totalPages: crawlData.totalPages,
+      pages: preparedPages,
+      summary: crawlData.summary,
+      visitedUrls: crawlData.visitedUrls
+    };
+    
+    // Check payload size
+    let payload = JSON.stringify({ data: exportData });
+    let payloadSizeMB = payload.length / (1024 * 1024);
+    
+    // Progressive compression if needed
+    if (payloadSizeMB > 10) {
+      console.warn(`Crawl PDF payload size is ${payloadSizeMB.toFixed(2)}MB, compressing...`);
+      const compressionLevels = [
+        { threshold: 10, maxArraySize: 100 },
+        { threshold: 20, maxArraySize: 50 },
+        { threshold: 50, maxArraySize: 25 },
+      ];
+      
+      for (const level of compressionLevels) {
+        if (payloadSizeMB > level.threshold) {
+          console.warn(`Compressing to max ${level.maxArraySize} items per array...`);
+          const moreCompressed = {
+            ...exportData,
+            pages: exportData.pages.map(page => {
+              const compressed = { ...page };
+              Object.keys(compressed).forEach(key => {
+                if (Array.isArray(compressed[key]) && compressed[key].length > level.maxArraySize) {
+                  compressed[`${key}_total`] = compressed[key].length;
+                  compressed[key] = compressed[key].slice(0, level.maxArraySize);
+                  compressed[`${key}_truncated`] = true;
+                }
+              });
+              return compressed;
+            })
+          };
+          exportData.pages = moreCompressed.pages;
+          payload = JSON.stringify({ data: exportData });
+          payloadSizeMB = payload.length / (1024 * 1024);
+        }
+      }
+    }
+    
+    if (payloadSizeMB > 1) {
+      console.log(`Exporting crawl PDF with payload size: ${payloadSizeMB.toFixed(2)}MB`);
+    }
+    
+    // Warn user if payload is very large
+    if (payloadSizeMB > 50) {
+      console.warn(`⚠️ Very large crawl PDF export: ${payloadSizeMB.toFixed(2)}MB. This may take a while...`);
+    }
+    
+    const response = await fetch(`${API_BASE_URL}/export/crawl-pdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: payload,
+    });
+
+    const contentType = response.headers.get('content-type');
+    
+    if (!response.ok) {
+      if (response.status === 413) {
+        throw new Error(`Server weigert export: payload te groot (${payloadSizeMB.toFixed(2)}MB). De server heeft een limiet ingesteld. Probeer een kleinere dataset of verwijder grote arrays.`);
+      }
+      
+      let errorMessage = 'Failed to export crawl PDF';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (jsonError) {
+        try {
+          const errorText = await response.text();
+          if (errorText.includes('<!DOCTYPE')) {
+            errorMessage = 'Server error: Received HTML instead of PDF. Check server logs.';
+          } else {
+            errorMessage = errorText.substring(0, 200);
+          }
+        } catch (textError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    if (!contentType || !contentType.includes('application/pdf')) {
+      const errorText = await response.text();
+      throw new Error('Server returned non-PDF content. ' + errorText.substring(0, 100));
+    }
+
+    const blob = await response.blob();
+    
+    if (blob.type && !blob.type.includes('pdf')) {
+      throw new Error('Downloaded file is not a PDF');
+    }
+    
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    throw new Error('Failed to export crawl PDF: ' + error.message);
   }
 }
 
