@@ -18,6 +18,7 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 - **Export Functionaliteit**: Export naar JSON en CSV
 - **Zoeken & Filteren**: Zoek en filter door gescrapede data
 - **Sorteren**: Sorteer resultaten op verschillende criteria
+- **Proxy Support**: Roterende proxies voor anti-bot bypass met health monitoring en automatische failover
 - **Modern UI**: React + Shadcn UI met Tailwind CSS
 - **Responsive Design**: Werkt op alle apparaten
 
@@ -653,6 +654,63 @@ Voor andere sites wordt automatisch Cheerio gebruikt voor snellere scraping.
 - Screenshot capture (full-page of viewport)
 - Dynamische content loading
 
+## Proxy Support
+
+De applicatie ondersteunt proxy rotatie voor anti-bot bypass met de volgende features:
+
+### Features
+
+- **Proxy Rotatie**: Automatische rotatie tussen geconfigureerde proxies
+- **Health Monitoring**: Automatische health checks om gezonde proxies te identificeren
+- **Automatische Failover**: Bij falen van een proxy wordt automatisch de volgende proxy geprobeerd
+- **Proxy Management UI**: Voeg proxies toe, verwijder ze, en monitor hun status via de UI
+- **Statistieken**: Bekijk success rates, response times en health status per proxy
+
+### Proxy Configuratie
+
+Proxies kunnen worden geconfigureerd via:
+
+1. **Environment Variables**:
+   ```bash
+   PROXY_ENABLED=true
+   PROXIES='[{"host":"proxy.example.com","port":8080,"username":"user","password":"pass","protocol":"http"}]'
+   ```
+
+2. **Via de UI**: Ga naar de "Proxy Management" tab om proxies toe te voegen en te beheren
+
+### Proxy Formaten
+
+Proxies kunnen worden toegevoegd in twee formaten:
+
+**Format 1 - Object:**
+```json
+{
+  "host": "proxy.example.com",
+  "port": 8080,
+  "username": "user",
+  "password": "pass",
+  "protocol": "http"
+}
+```
+
+**Format 2 - URL String:**
+```
+http://user:pass@proxy.example.com:8080
+```
+
+### Health Monitoring
+
+- Automatische health checks elke 5 minuten (configureerbaar)
+- Proxies worden gemarkeerd als ongezond na 3 opeenvolgende fouten
+- Health check URL: `https://www.google.com` (configureerbaar)
+- Response time tracking per proxy
+
+### Failover
+
+- Bij falen van een request wordt automatisch de volgende gezonde proxy geprobeerd
+- Maximaal 3 retries met verschillende proxies
+- Alleen gezonde proxies worden gebruikt voor nieuwe requests
+
 ## Opmerkingen
 
 - Sommige websites kunnen anti-scraping maatregelen hebben
@@ -667,6 +725,7 @@ Voor andere sites wordt automatisch Cheerio gebruikt voor snellere scraping.
 - Analytics worden automatisch bijgewerkt bij elke scrape
 - Crawl sessies worden automatisch opgeschoond na 30 seconden
 - SEO analyse wordt automatisch uitgevoerd bij elke scrape
+- Proxy support is optioneel en kan worden ingeschakeld via configuratie
 
 ## Browser Ondersteuning
 
