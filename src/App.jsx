@@ -11,8 +11,11 @@ import { CrawlForm } from "./components/CrawlForm";
 import { SEOAnalysis } from "./components/SEOAnalysis";
 import { DataVisualization } from "./components/DataVisualization";
 import { ProxyManager } from "./components/ProxyManager";
+import { AIInsights } from "./components/AIInsights";
+import { LanguageSettings } from "./components/LanguageSettings";
 import { Button } from "./components/ui/button";
 import { Tooltip } from "./components/ui/tooltip";
+import { t } from "./i18n";
 import {
   Globe,
   BarChart3,
@@ -24,6 +27,8 @@ import {
   Search,
   TrendingUp,
   Server,
+  Brain,
+  Languages,
 } from "lucide-react";
 
 function App() {
@@ -32,6 +37,10 @@ function App() {
   const [activeTab, setActiveTab] = useState("scrape");
   const [currentUrl, setCurrentUrl] = useState(null);
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
+  const [currentLanguage, setCurrentLanguage] = useState(() => {
+    // Get language from localStorage or default
+    return localStorage.getItem('app_language') || 'nl';
+  });
 
   useEffect(() => {
     const handleResize = () => {
@@ -39,6 +48,15 @@ function App() {
     };
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
+  }, []);
+
+  // Listen for language changes
+  useEffect(() => {
+    const handleLanguageChange = (e) => {
+      setCurrentLanguage(e.detail.language);
+    };
+    window.addEventListener('languageChanged', handleLanguageChange);
+    return () => window.removeEventListener('languageChanged', handleLanguageChange);
   }, []);
 
   // Scroll active tab into view when it changes
@@ -88,76 +106,91 @@ function App() {
     }, 100);
   };
 
+  // Define tabs with translations (will update when language changes)
   const tabs = [
     { 
       id: "scrape", 
-      label: "Scrapen", 
-      shortLabel: "Scrapen", 
+      getLabel: () => t("tabs.scrape"), 
+      getShortLabel: () => t("tabs.scrape"), 
       icon: Globe,
-      tooltip: "Scrape een enkele webpagina. Extraheert links, afbeeldingen, tekst en meer."
+      getTooltip: () => t("tooltips.scrape")
     },
     { 
       id: "crawl", 
-      label: "Crawlen", 
-      shortLabel: "Crawlen", 
+      getLabel: () => t("tabs.crawl"), 
+      getShortLabel: () => t("tabs.crawl"), 
       icon: Network,
-      tooltip: "Crawl een hele website. Volgt automatisch links en scrape meerdere pagina's."
+      getTooltip: () => t("tooltips.crawl")
     },
     { 
       id: "custom", 
-      label: "Custom Selectors", 
-      shortLabel: "Custom", 
+      getLabel: () => t("tabs.custom"), 
+      getShortLabel: () => t("tabs.custom"), 
       icon: Code,
-      tooltip: "Gebruik CSS selectors om specifieke elementen te extraheren. Voor gevorderde gebruikers."
+      getTooltip: () => t("tooltips.custom")
     },
     { 
       id: "bulk", 
-      label: "Bulk Scrapen", 
-      shortLabel: "Bulk", 
+      getLabel: () => t("tabs.bulk"), 
+      getShortLabel: () => t("tabs.bulk"), 
       icon: FileDown,
-      tooltip: "Scrape meerdere URLs tegelijk. Handig voor het vergelijken van verschillende sites."
+      getTooltip: () => t("tooltips.bulk")
     },
     { 
       id: "history", 
-      label: "Geschiedenis", 
-      shortLabel: "Historie", 
+      getLabel: () => t("tabs.history"), 
+      getShortLabel: () => t("tabs.history"), 
       icon: History,
-      tooltip: "Bekijk en beheer je eerdere scrapes. Exporteer of verwijder items."
+      getTooltip: () => t("tooltips.history")
     },
     { 
       id: "changes", 
-      label: "Change Detection", 
-      shortLabel: "Changes", 
+      getLabel: () => t("tabs.changes"), 
+      getShortLabel: () => t("tabs.changes"), 
       icon: GitCompare,
-      tooltip: "Vergelijk twee scrapes en zie wat er is veranderd op een website."
+      getTooltip: () => t("tooltips.changes")
     },
     { 
       id: "seo", 
-      label: "SEO Analysis", 
-      shortLabel: "SEO", 
+      getLabel: () => t("tabs.seo"), 
+      getShortLabel: () => t("tabs.seo"), 
       icon: Search,
-      tooltip: "Analyseer SEO aspecten van een gescrapede pagina. Vereist eerst een scrape."
+      getTooltip: () => t("tooltips.seo")
     },
     { 
       id: "visualization", 
-      label: "Data Visualization", 
-      shortLabel: "Visual", 
+      getLabel: () => t("tabs.visualization"), 
+      getShortLabel: () => t("tabs.visualization"), 
       icon: TrendingUp,
-      tooltip: "Visualiseer scraped data met grafieken en diagrammen. Vereist eerst een scrape."
+      getTooltip: () => t("tooltips.visualization")
+    },
+    { 
+      id: "insights", 
+      getLabel: () => t("tabs.insights"), 
+      getShortLabel: () => t("tabs.insights"), 
+      icon: Brain,
+      getTooltip: () => t("tooltips.insights")
     },
     { 
       id: "analytics", 
-      label: "Analytics", 
-      shortLabel: "Stats", 
+      getLabel: () => t("tabs.analytics"), 
+      getShortLabel: () => t("tabs.analytics"), 
       icon: BarChart3,
-      tooltip: "Bekijk statistieken over al je scrapes. Success rates, meest gescrapede sites, etc."
+      getTooltip: () => t("tooltips.analytics")
     },
     { 
       id: "proxy", 
-      label: "Proxy Management", 
-      shortLabel: "Proxy", 
+      getLabel: () => t("tabs.proxy"), 
+      getShortLabel: () => t("tabs.proxy"), 
       icon: Server,
-      tooltip: "Beheer proxies voor rotatie en anti-bot bypass. Voeg proxies toe en monitor gezondheid."
+      getTooltip: () => t("tooltips.proxy")
+    },
+    { 
+      id: "settings", 
+      getLabel: () => t("tabs.settings"), 
+      getShortLabel: () => t("tabs.settings"), 
+      icon: Languages,
+      getTooltip: () => t("tooltips.settings")
     },
   ];
 
@@ -166,11 +199,10 @@ function App() {
       <div className="container mx-auto py-8">
         <header className="text-center mb-8">
           <h1 className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">
-            Web Scraper
+            {t("app.title")}
           </h1>
           <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
-            Scrape websites, extract data, analyseer content en exporteer naar Excel/PDF. 
-            Kies een tab hieronder om te beginnen.
+            {t("app.description")}
           </p>
         </header>
 
@@ -186,8 +218,11 @@ function App() {
           >
             {tabs.map((tab) => {
               const Icon = tab.icon;
+              const label = tab.getLabel();
+              const shortLabel = tab.getShortLabel();
+              const tooltip = tab.getTooltip();
               return (
-                <Tooltip key={tab.id} content={tab.tooltip} position="bottom">
+                <Tooltip key={tab.id} content={tooltip} position="bottom">
                   <button
                     onClick={() => {
                       setActiveTab(tab.id);
@@ -198,7 +233,7 @@ function App() {
                       }
                     }}
                     data-tab-id={tab.id}
-                    title={tab.label}
+                    title={label}
                     className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-2 sm:px-3 md:px-4 lg:px-5 py-3 md:py-4 font-medium transition-colors whitespace-nowrap ${
                       activeTab === tab.id
                         ? "text-gray-900 border-b-2 border-gray-900 bg-gray-50"
@@ -207,7 +242,7 @@ function App() {
                   >
                     <Icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
                     <span className="hidden sm:inline text-xs md:text-sm lg:text-base">
-                      {isLargeScreen ? tab.label : (tab.shortLabel || tab.label)}
+                      {isLargeScreen ? label : (shortLabel || label)}
                     </span>
                   </button>
                 </Tooltip>
@@ -284,8 +319,10 @@ function App() {
             {activeTab === "visualization" && (
               <DataVisualization scrapedData={scrapedData} />
             )}
+            {activeTab === "insights" && <AIInsights data={scrapedData} />}
             {activeTab === "analytics" && <AnalyticsDashboard />}
             {activeTab === "proxy" && <ProxyManager />}
+            {activeTab === "settings" && <LanguageSettings />}
           </div>
         </div>
 
