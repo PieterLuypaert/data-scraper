@@ -1,6 +1,7 @@
 const puppeteer = require('puppeteer');
 const axios = require('axios');
 const config = require('../config');
+const getProxyManager = require('../utils/proxyManagerInstance');
 
 /**
  * Wait for specified milliseconds (compatible with all Puppeteer versions)
@@ -127,21 +128,58 @@ async function waitForImages(page) {
  * Scrape a URL using Puppeteer
  * @param {string} url - URL to scrape
  * @param {boolean} forceScreenshot - Force screenshot even if page loads slowly
+ * @param {Object} proxy - Optional proxy to use (for retry with different proxy)
  * @returns {Promise<{htmlContent: string, finalUrl: string, screenshot: string|null}>}
  */
-async function scrapeWithPuppeteer(url, forceScreenshot = false) {
+async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
+  const proxyManager = getProxyManager();
   console.log(`Using Puppeteer for ${new URL(url).hostname} - URL: ${url}`);
   let browser;
+  let selectedProxy = proxy;
+  let retries = 0;
+  const maxRetries = proxyManager && config.PROXY.enabled && config.PROXY.failoverEnabled ? 3 : 0;
   
-  try {
-    console.log('Launching Puppeteer browser...');
-    browser = await puppeteer.launch({
-      headless: true,
-      ...config.PUPPETEER
-    });
-    
-    console.log('Browser launched, creating new page...');
-    const page = await browser.newPage();
+  while (retries <= maxRetries) {
+    try {
+      // Get proxy if enabled and not provided
+      if (!selectedProxy && proxyManager && config.PROXY.enabled && proxyManager.proxies.length > 0) {
+        selectedProxy = proxyManager.getNextProxy();
+      }
+      
+      console.log('Launching Puppeteer browser...');
+      const launchOptions = {
+        headless: true,
+        ...config.PUPPETEER
+      };
+      
+      // Add proxy configuration if available
+      if (selectedProxy && proxyManager) {
+        const proxyConfig = proxyManager.getPuppeteerProxyConfig(selectedProxy);
+        if (proxyConfig.proxy) {
+          launchOptions.args = [
+            ...(launchOptions.args || []),
+            `--proxy-server=${proxyConfig.proxy.server}`
+          ];
+          console.log(`Using proxy: ${proxyConfig.proxy.server}`);
+        }
+      }
+      
+      browser = await puppeteer.launch(launchOptions);
+      
+      console.log('Browser launched, creating new page...');
+      const page = await browser.newPage();
+      
+      // Authenticate proxy if credentials are provided
+      if (selectedProxy && proxyManager) {
+        const proxyConfig = proxyManager.getPuppeteerProxyConfig(selectedProxy);
+        if (proxyConfig.proxy && proxyConfig.proxy.username && proxyConfig.proxy.password) {
+          await page.authenticate({
+            username: proxyConfig.proxy.username,
+            password: proxyConfig.proxy.password
+          });
+          console.log('Proxy authentication configured');
+        }
+      }
     
     // Remove webdriver property to avoid detection
     await page.evaluateOnNewDocument(() => {
@@ -299,67 +337,105 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false) {
     await browser.close();
     console.log('Browser closed successfully');
     
+    // Mark proxy as successful
+    if (selectedProxy && proxyManager) {
+      proxyManager.markProxySuccess(selectedProxy);
+    }
+    
     return { 
       htmlContent, 
       finalUrl,
       screenshot: screenshot ? `data:image/png;base64,${screenshot}` : null
     };
     
-  } catch (puppeteerError) {
-    console.error('Puppeteer error details:', {
-      message: puppeteerError.message,
-      stack: puppeteerError.stack,
-      name: puppeteerError.name
-    });
-    
-    if (browser) {
-      try {
-        await browser.close();
-      } catch (closeError) {
-        console.error('Error closing browser:', closeError);
+    } catch (puppeteerError) {
+      // Mark proxy as failed if using proxy
+      if (selectedProxy && proxyManager) {
+        proxyManager.markProxyFailed(selectedProxy);
       }
-    }
-    
-    // Provide more specific error message
-    let errorMsg = `Puppeteer error: ${puppeteerError.message}`;
-    if (puppeteerError.message.includes('Target closed')) {
-      errorMsg = 'Browser werd gesloten voordat de pagina kon worden geladen. Probeer het opnieuw.';
-    } else if (puppeteerError.message.includes('Navigation timeout')) {
-      errorMsg = 'Timeout: De website reageert niet snel genoeg. Probeer het later opnieuw.';
-    } else if (puppeteerError.message.includes('net::ERR')) {
-      errorMsg = `Netwerk error: ${puppeteerError.message}`;
-    }
-    
-    // If Puppeteer fails and screenshot is not forced, try fallback to axios
-    // If screenshot is forced, don't fallback (user wants screenshot, not just HTML)
-    if (!forceScreenshot) {
-      console.log('Puppeteer failed, trying fallback with axios...');
-      try {
-        const response = await axios.get(url, {
-          timeout: 30000,
-          headers: {
-            'User-Agent': config.USER_AGENT,
-            'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-            'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
-            'Accept-Encoding': 'gzip, deflate, br',
-            'Connection': 'keep-alive',
-            'Upgrade-Insecure-Requests': '1',
-            'Sec-Fetch-Dest': 'document',
-            'Sec-Fetch-Mode': 'navigate',
-            'Sec-Fetch-Site': 'none'
-          },
-          maxRedirects: 5
-        });
-        const finalUrl = response.request.res.responseUrl || url;
-        const htmlContent = response.data;
-        console.log('Fallback axios request successful');
-        return { htmlContent, finalUrl };
-      } catch (axiosError) {
+      
+      // Close browser if still open
+      if (browser) {
+        try {
+          await browser.close();
+        } catch (closeError) {
+          console.error('Error closing browser:', closeError);
+        }
+      }
+      
+      // If failover is enabled and we have more retries, try next proxy
+      if (retries < maxRetries && proxyManager && config.PROXY.enabled && config.PROXY.failoverEnabled && proxyManager.proxies.length > 0) {
+        console.warn(`Request failed with proxy ${selectedProxy?.url || selectedProxy?.host}, trying next proxy...`);
+        selectedProxy = null; // Get next proxy
+        retries++;
+        continue;
+      }
+      
+      // If no proxy or no more retries, handle error
+      console.error('Puppeteer error details:', {
+        message: puppeteerError.message,
+        stack: puppeteerError.stack,
+        name: puppeteerError.name
+      });
+      
+      // Provide more specific error message
+      let errorMsg = `Puppeteer error: ${puppeteerError.message}`;
+      if (puppeteerError.message.includes('Target closed')) {
+        errorMsg = 'Browser werd gesloten voordat de pagina kon worden geladen. Probeer het opnieuw.';
+      } else if (puppeteerError.message.includes('Navigation timeout')) {
+        errorMsg = 'Timeout: De website reageert niet snel genoeg. Probeer het later opnieuw.';
+      } else if (puppeteerError.message.includes('net::ERR')) {
+        errorMsg = `Netwerk error: ${puppeteerError.message}`;
+      }
+      
+      // If Puppeteer fails and screenshot is not forced, try fallback to axios
+      // If screenshot is forced, don't fallback (user wants screenshot, not just HTML)
+      if (!forceScreenshot) {
+        console.log('Puppeteer failed, trying fallback with axios...');
+        try {
+          const axiosConfig = {
+            timeout: 30000,
+            headers: {
+              'User-Agent': config.USER_AGENT,
+              'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+              'Accept-Language': 'nl-NL,nl;q=0.9,en-US;q=0.8,en;q=0.7',
+              'Accept-Encoding': 'gzip, deflate, br',
+              'Connection': 'keep-alive',
+              'Upgrade-Insecure-Requests': '1',
+              'Sec-Fetch-Dest': 'document',
+              'Sec-Fetch-Mode': 'navigate',
+              'Sec-Fetch-Site': 'none'
+            },
+            maxRedirects: 5
+          };
+          
+          // Add proxy agent if available
+          if (selectedProxy && proxyManager) {
+            const agent = proxyManager.getProxyAgent(selectedProxy);
+            if (agent) {
+              axiosConfig.httpsAgent = agent;
+              axiosConfig.httpAgent = agent;
+            }
+          }
+          
+          const response = await axios.get(url, axiosConfig);
+          const finalUrl = response.request.res.responseUrl || url;
+          const htmlContent = response.data;
+          console.log('Fallback axios request successful');
+          
+          // Mark proxy as successful
+          if (selectedProxy && proxyManager) {
+            proxyManager.markProxySuccess(selectedProxy);
+          }
+          
+          return { htmlContent, finalUrl };
+        } catch (axiosError) {
+          throw new Error(errorMsg);
+        }
+      } else {
+        // Screenshot was forced, so throw error instead of falling back
         throw new Error(errorMsg);
       }
-    } else {
-      // Screenshot was forced, so throw error instead of falling back
-      throw new Error(errorMsg);
     }
   }
 }
