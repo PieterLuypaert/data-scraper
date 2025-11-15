@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
+import { Tooltip, InfoBadge } from './ui/tooltip';
+import { HelpText } from './ui/help-text';
 import { crawlWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { Loader2, Globe, Settings, Info } from 'lucide-react';
@@ -59,34 +61,52 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
         <CardTitle className="flex items-center gap-2">
           <Globe className="h-5 w-5" />
           Crawl Website (Alle Pagina's)
+          <InfoBadge tooltip="Crawlt automatisch door een hele website door links te volgen. Ideaal voor het scrapen van meerdere pagina's tegelijk." />
         </CardTitle>
         <CardDescription>
           Scrape alle pagina's van een website door automatisch links te volgen
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <div className="flex gap-2">
-            <Input
-              type="text"
-              placeholder="https://voorbeeld.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              className="flex-1"
-            />
-            <Button type="submit" disabled={loading}>
-              {loading ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Crawlen...
-                </>
-              ) : (
-                'Start Crawl'
-              )}
-            </Button>
-          </div>
+        <div className="space-y-4">
+          <HelpText type="tip" title="Tip">
+            Start met een klein aantal pagina's (10-20) om te testen. Verhoog daarna naar meer pagina's als nodig. 
+            Grote crawls kunnen lang duren en veel geheugen gebruiken.
+          </HelpText>
+          
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2">
+                <label htmlFor="crawl-url" className="text-sm font-medium text-gray-700">
+                  Start URL
+                </label>
+                <InfoBadge tooltip="De crawler start vanaf deze URL en volgt links binnen hetzelfde domein" />
+              </div>
+              <div className="flex gap-2">
+                <Input
+                  id="crawl-url"
+                  type="text"
+                  placeholder="https://voorbeeld.com"
+                  value={url}
+                  onChange={(e) => setUrl(e.target.value)}
+                  onKeyPress={handleKeyPress}
+                  disabled={loading}
+                  className="flex-1"
+                />
+                <Tooltip content="Start het crawlen van de website">
+                  <Button type="submit" disabled={loading}>
+                    {loading ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Crawlen...
+                      </>
+                    ) : (
+                      'Start Crawl'
+                    )}
+                  </Button>
+                </Tooltip>
+              </div>
+            </div>
 
           {/* Options Toggle */}
           <div className="flex items-center justify-between">
@@ -113,9 +133,12 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Max Pagina's
-                  </label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="block text-sm font-medium">
+                      Max Pagina's
+                    </label>
+                    <InfoBadge tooltip="Maximum aantal pagina's dat wordt gescraped. Hogere waarden = langere wachttijd." />
+                  </div>
                   <Input
                     type="number"
                     min="1"
@@ -140,9 +163,12 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Max Diepte
-                  </label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="block text-sm font-medium">
+                      Max Diepte
+                    </label>
+                    <InfoBadge tooltip="Hoeveel niveaus diep de crawler gaat. Diepte 1 = alleen startpagina, diepte 2 = startpagina + directe links, etc." />
+                  </div>
                   <Input
                     type="number"
                     min="1"
@@ -155,9 +181,12 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                 </div>
 
                 <div>
-                  <label className="block text-sm font-medium mb-1">
-                    Vertraging (ms)
-                  </label>
+                  <div className="flex items-center gap-2 mb-1">
+                    <label className="block text-sm font-medium">
+                      Vertraging (ms)
+                    </label>
+                    <InfoBadge tooltip="Wachttijd tussen elke request. Hogere waarden = respectvoller voor de server, maar langzamer." />
+                  </div>
                   <Input
                     type="number"
                     min="0"
@@ -167,7 +196,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                     onChange={(e) => setOptions({ ...options, delay: parseInt(e.target.value) || 1000 })}
                     disabled={loading}
                   />
-                  <p className="text-xs text-gray-500 mt-1">Wachttijd tussen requests</p>
+                  <p className="text-xs text-gray-500 mt-1">Wachttijd tussen requests (aanbevolen: 1000ms)</p>
                 </div>
               </div>
 
@@ -214,6 +243,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
             </Alert>
           )}
         </form>
+        </div>
       </CardContent>
     </Card>
   );

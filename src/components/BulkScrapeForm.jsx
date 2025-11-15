@@ -3,6 +3,8 @@ import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
+import { Tooltip, InfoBadge } from './ui/tooltip';
+import { HelpText } from './ui/help-text';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { Loader2, Plus, X, CheckCircle2, XCircle } from 'lucide-react';
@@ -102,11 +104,25 @@ export function BulkScrapeForm({ onScrapeComplete }) {
   return (
     <Card>
       <CardHeader>
-        <CardTitle>Bulk Scraping</CardTitle>
+        <CardTitle className="flex items-center gap-2">
+          Bulk Scraping
+          <InfoBadge tooltip="Scrape meerdere websites tegelijk. Handig voor het vergelijken van verschillende pagina's of het verzamelen van data van meerdere sites." />
+        </CardTitle>
         <CardDescription>Scrape meerdere URLs tegelijk</CardDescription>
       </CardHeader>
       <CardContent className="space-y-4">
+        <HelpText type="info" title="Hoe werkt bulk scraping?">
+          Voeg meerdere URLs toe en scrape ze allemaal tegelijk. Elke URL wordt onafhankelijk gescraped. 
+          Resultaten worden automatisch opgeslagen in de geschiedenis.
+        </HelpText>
+        
         <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label className="text-sm font-medium text-gray-700">
+              URLs om te scrapen
+            </label>
+            <InfoBadge tooltip="Voeg zoveel URLs toe als je wilt. Elke URL wordt één voor één gescraped." />
+          </div>
           {urls.map((url, index) => (
             <div key={index} className="flex gap-2">
               <Input
@@ -118,33 +134,38 @@ export function BulkScrapeForm({ onScrapeComplete }) {
                 className="flex-1"
               />
               {urls.length > 1 && (
-                <Button
-                  type="button"
-                  variant="outline"
-                  size="icon"
-                  onClick={() => removeUrlField(index)}
-                  disabled={loading}
-                >
-                  <X className="h-4 w-4" />
-                </Button>
+                <Tooltip content="Verwijder deze URL">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    size="icon"
+                    onClick={() => removeUrlField(index)}
+                    disabled={loading}
+                  >
+                    <X className="h-4 w-4" />
+                  </Button>
+                </Tooltip>
               )}
             </div>
           ))}
         </div>
 
         <div className="flex gap-2">
-          <Button
-            type="button"
-            variant="outline"
-            onClick={addUrlField}
-            disabled={loading}
-          >
-            <Plus className="mr-2 h-4 w-4" />
-            URL Toevoegen
-          </Button>
-          <Button
-            type="button"
-            onClick={handleBulkScrape}
+          <Tooltip content="Voeg een extra URL veld toe">
+            <Button
+              type="button"
+              variant="outline"
+              onClick={addUrlField}
+              disabled={loading}
+            >
+              <Plus className="mr-2 h-4 w-4" />
+              URL Toevoegen
+            </Button>
+          </Tooltip>
+          <Tooltip content={`Start bulk scraping van ${urls.filter(u => u.trim()).length} URL(s)`}>
+            <Button
+              type="button"
+              onClick={handleBulkScrape}
             disabled={loading || urls.every(u => !u.trim())}
             className="flex-1"
           >
@@ -157,6 +178,7 @@ export function BulkScrapeForm({ onScrapeComplete }) {
               'Start Bulk Scraping'
             )}
           </Button>
+          </Tooltip>
         </div>
 
         {loading && (

@@ -1,6 +1,7 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
+import { Tooltip, InfoBadge } from './ui/tooltip';
 import { Copy, Check, Download, FileJson, FileSpreadsheet, FileText as FileTextIcon, FileDown, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X, Search } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
 import { exportToJSON, exportToCSV, exportToExcel, exportToPDF } from '@/utils/export';
@@ -179,21 +180,31 @@ export function ScrapeResultsExtended({ data, crawlData }) {
             )}
           </div>
           <div className="flex flex-wrap gap-2">
-            <Button onClick={handleCopy} variant="outline" size="sm">
-              {copied ? <><Check className="mr-2 h-4 w-4" />Gekopieerd!</> : <><Copy className="mr-2 h-4 w-4" />Kopieer</>}
-            </Button>
-            <Button onClick={handleExportJSON} variant="outline" size="sm">
-              <FileJson className="mr-2 h-4 w-4" />JSON
-            </Button>
-            <Button onClick={handleExportCSV} variant="outline" size="sm">
-              <FileSpreadsheet className="mr-2 h-4 w-4" />CSV
-            </Button>
-            <Button onClick={handleExportExcel} variant="outline" size="sm">
-              <FileSpreadsheet className="mr-2 h-4 w-4" />Excel
-            </Button>
-            <Button onClick={handleExportPDF} variant="outline" size="sm">
-              <FileTextIcon className="mr-2 h-4 w-4" />PDF
-            </Button>
+            <Tooltip content="Kopieer alle data naar clipboard als JSON">
+              <Button onClick={handleCopy} variant="outline" size="sm">
+                {copied ? <><Check className="mr-2 h-4 w-4" />Gekopieerd!</> : <><Copy className="mr-2 h-4 w-4" />Kopieer</>}
+              </Button>
+            </Tooltip>
+            <Tooltip content="Exporteer naar JSON bestand">
+              <Button onClick={handleExportJSON} variant="outline" size="sm">
+                <FileJson className="mr-2 h-4 w-4" />JSON
+              </Button>
+            </Tooltip>
+            <Tooltip content="Exporteer naar CSV bestand">
+              <Button onClick={handleExportCSV} variant="outline" size="sm">
+                <FileSpreadsheet className="mr-2 h-4 w-4" />CSV
+              </Button>
+            </Tooltip>
+            <Tooltip content={crawlData && crawlData.totalPages > 1 ? "Exporteer alle pagina's naar Excel met meerdere sheets" : "Exporteer naar Excel met formatting en meerdere sheets"}>
+              <Button onClick={handleExportExcel} variant="outline" size="sm">
+                <FileSpreadsheet className="mr-2 h-4 w-4" />Excel
+              </Button>
+            </Tooltip>
+            <Tooltip content={crawlData && crawlData.totalPages > 1 ? "Exporteer alle pagina's naar PDF rapport" : "Exporteer naar PDF met screenshots en formatting"}>
+              <Button onClick={handleExportPDF} variant="outline" size="sm">
+                <FileTextIcon className="mr-2 h-4 w-4" />PDF
+              </Button>
+            </Tooltip>
           </div>
         </div>
 

@@ -3,6 +3,8 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
+import { Tooltip, InfoBadge } from './ui/tooltip';
+import { HelpText } from './ui/help-text';
 import { Plus, Trash2, Play, CheckCircle, XCircle, Loader2, Code, FileText, DollarSign, ShoppingBag, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { validateUrl } from '@/utils/validation';
 
@@ -352,16 +354,26 @@ export function CustomSelector({ onScrapeSuccess }) {
         <CardHeader className="pb-3">
           <div className="flex items-center justify-between">
             <div>
-              <CardTitle className="text-lg">Custom Selectors</CardTitle>
+              <CardTitle className="flex items-center gap-2 text-lg">
+                Custom Selectors
+                <InfoBadge tooltip="Gebruik CSS selectors (zoals .class, #id, element) om specifieke elementen van een pagina te extraheren. Voor gevorderde gebruikers." />
+              </CardTitle>
               <CardDescription>Voeg CSS selectors toe om specifieke elementen te scrapen</CardDescription>
             </div>
-            <Button onClick={addSelector} variant="outline" size="sm">
-              <Plus className="h-4 w-4 mr-2" />
-              Selector Toevoegen
-            </Button>
+            <Tooltip content="Voeg een nieuwe CSS selector toe">
+              <Button onClick={addSelector} variant="outline" size="sm">
+                <Plus className="h-4 w-4 mr-2" />
+                Selector Toevoegen
+              </Button>
+            </Tooltip>
           </div>
         </CardHeader>
-        <CardContent className="pt-0">
+        <CardContent className="pt-0 space-y-4">
+          <HelpText type="tip" title="Wat zijn CSS selectors?">
+            CSS selectors zijn patronen om elementen op een pagina te vinden. Bijvoorbeeld: <code className="bg-gray-100 px-1 rounded text-xs">.product-title</code> voor elementen met class "product-title", 
+            of <code className="bg-gray-100 px-1 rounded text-xs">h1</code> voor alle H1 headings. Gebruik de templates hieronder of voer je eigen selector in.
+          </HelpText>
+          
           {selectors.length === 0 ? (
             <div className="text-center py-8 text-gray-500">
               <Code className="h-12 w-12 mx-auto mb-2 opacity-50" />
@@ -373,7 +385,10 @@ export function CustomSelector({ onScrapeSuccess }) {
                 <div key={selector.id} className="p-4 bg-gray-50 rounded border border-gray-200">
                   <div className="grid grid-cols-1 md:grid-cols-12 gap-2 mb-2">
                     <div className="md:col-span-4">
-                      <label className="text-xs text-gray-600 mb-1 block">Naam (optioneel)</label>
+                      <div className="flex items-center gap-1 mb-1">
+                        <label className="text-xs text-gray-600 block">Naam (optioneel)</label>
+                        <InfoBadge tooltip="Een beschrijvende naam voor deze selector. Wordt gebruikt in de resultaten." />
+                      </div>
                       <Input
                         type="text"
                         placeholder="Bijv: Productnamen"
@@ -383,7 +398,10 @@ export function CustomSelector({ onScrapeSuccess }) {
                       />
                     </div>
                     <div className="md:col-span-7">
-                      <label className="text-xs text-gray-600 mb-1 block">CSS Selector</label>
+                      <div className="flex items-center gap-1 mb-1">
+                        <label className="text-xs text-gray-600 block">CSS Selector</label>
+                        <InfoBadge tooltip="CSS selector patroon. Bijvoorbeeld: .class, #id, element, element.class, etc." />
+                      </div>
                       <Input
                         type="text"
                         placeholder="Bijv: .product-title, h2.product"

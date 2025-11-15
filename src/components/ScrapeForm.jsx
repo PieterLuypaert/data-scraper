@@ -2,10 +2,12 @@ import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
+import { Tooltip, InfoBadge } from './ui/tooltip';
+import { HelpText } from './ui/help-text';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
-import { Loader2, Camera } from 'lucide-react';
+import { Loader2, Camera, Info } from 'lucide-react';
 
 export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   const [url, setUrl] = useState('');
@@ -51,29 +53,46 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto">
+    <div className="w-full max-w-4xl mx-auto space-y-4">
+      <HelpText type="info" title="Hoe werkt dit?">
+        Voer een URL in om een enkele webpagina te scrapen. De scraper extraheert automatisch links, afbeeldingen, tekst, meta tags en meer. 
+        Gebruik <strong>Crawlen</strong> voor meerdere pagina's of <strong>Bulk Scrapen</strong> voor meerdere URLs tegelijk.
+      </HelpText>
+      
       <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="flex gap-2">
-          <Input
-            type="text"
-            placeholder="https://voorbeeld.com"
-            value={url}
-            onChange={(e) => setUrl(e.target.value)}
-            onKeyPress={handleKeyPress}
-            disabled={loading}
-            className="flex-1"
-          />
-          <Button type="submit" disabled={loading}>
-            {loading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Laden...
-              </>
-            ) : (
-              'Send'
-            )}
-          </Button>
+        <div className="space-y-2">
+          <div className="flex items-center gap-2">
+            <label htmlFor="scrape-url" className="text-sm font-medium text-gray-700">
+              Website URL
+            </label>
+            <InfoBadge tooltip="Voer een volledige URL in, bijvoorbeeld: https://example.com" />
+          </div>
+          <div className="flex gap-2">
+            <Input
+              id="scrape-url"
+              type="text"
+              placeholder="https://voorbeeld.com"
+              value={url}
+              onChange={(e) => setUrl(e.target.value)}
+              onKeyPress={handleKeyPress}
+              disabled={loading}
+              className="flex-1"
+            />
+            <Tooltip content="Start het scrapen van de website">
+              <Button type="submit" disabled={loading}>
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Laden...
+                  </>
+                ) : (
+                  'Scrapen'
+                )}
+              </Button>
+            </Tooltip>
+          </div>
         </div>
+        
         <div className="flex items-center gap-2">
           <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
             <input
@@ -84,9 +103,11 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
               className="rounded"
             />
             <Camera className="h-4 w-4" />
-            <span>Altijd screenshot maken (langzamer)</span>
+            <span>Altijd screenshot maken</span>
+            <InfoBadge tooltip="Gebruikt Puppeteer (headless browser) voor JavaScript-heavy sites. Langzamer maar geeft screenshots en werkt met dynamische content." />
           </label>
         </div>
+        
         {error && (
           <Alert variant="destructive">
             <AlertDescription>{error}</AlertDescription>

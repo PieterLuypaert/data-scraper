@@ -12,6 +12,7 @@ import { SEOAnalysis } from "./components/SEOAnalysis";
 import { DataVisualization } from "./components/DataVisualization";
 import { ProxyManager } from "./components/ProxyManager";
 import { Button } from "./components/ui/button";
+import { Tooltip } from "./components/ui/tooltip";
 import {
   Globe,
   BarChart3,
@@ -88,25 +89,89 @@ function App() {
   };
 
   const tabs = [
-    { id: "scrape", label: "Scrapen", shortLabel: "Scrapen", icon: Globe },
-    { id: "crawl", label: "Crawlen", shortLabel: "Crawlen", icon: Network },
-    { id: "custom", label: "Custom Selectors", shortLabel: "Custom", icon: Code },
-    { id: "bulk", label: "Bulk Scrapen", shortLabel: "Bulk", icon: FileDown },
-    { id: "history", label: "Geschiedenis", shortLabel: "Historie", icon: History },
-    { id: "changes", label: "Change Detection", shortLabel: "Changes", icon: GitCompare },
-    { id: "seo", label: "SEO Analysis", shortLabel: "SEO", icon: Search },
-    { id: "visualization", label: "Data Visualization", shortLabel: "Visual", icon: TrendingUp },
-    { id: "analytics", label: "Analytics", shortLabel: "Stats", icon: BarChart3 },
-    { id: "proxy", label: "Proxy Management", shortLabel: "Proxy", icon: Server },
+    { 
+      id: "scrape", 
+      label: "Scrapen", 
+      shortLabel: "Scrapen", 
+      icon: Globe,
+      tooltip: "Scrape een enkele webpagina. Extraheert links, afbeeldingen, tekst en meer."
+    },
+    { 
+      id: "crawl", 
+      label: "Crawlen", 
+      shortLabel: "Crawlen", 
+      icon: Network,
+      tooltip: "Crawl een hele website. Volgt automatisch links en scrape meerdere pagina's."
+    },
+    { 
+      id: "custom", 
+      label: "Custom Selectors", 
+      shortLabel: "Custom", 
+      icon: Code,
+      tooltip: "Gebruik CSS selectors om specifieke elementen te extraheren. Voor gevorderde gebruikers."
+    },
+    { 
+      id: "bulk", 
+      label: "Bulk Scrapen", 
+      shortLabel: "Bulk", 
+      icon: FileDown,
+      tooltip: "Scrape meerdere URLs tegelijk. Handig voor het vergelijken van verschillende sites."
+    },
+    { 
+      id: "history", 
+      label: "Geschiedenis", 
+      shortLabel: "Historie", 
+      icon: History,
+      tooltip: "Bekijk en beheer je eerdere scrapes. Exporteer of verwijder items."
+    },
+    { 
+      id: "changes", 
+      label: "Change Detection", 
+      shortLabel: "Changes", 
+      icon: GitCompare,
+      tooltip: "Vergelijk twee scrapes en zie wat er is veranderd op een website."
+    },
+    { 
+      id: "seo", 
+      label: "SEO Analysis", 
+      shortLabel: "SEO", 
+      icon: Search,
+      tooltip: "Analyseer SEO aspecten van een gescrapede pagina. Vereist eerst een scrape."
+    },
+    { 
+      id: "visualization", 
+      label: "Data Visualization", 
+      shortLabel: "Visual", 
+      icon: TrendingUp,
+      tooltip: "Visualiseer scraped data met grafieken en diagrammen. Vereist eerst een scrape."
+    },
+    { 
+      id: "analytics", 
+      label: "Analytics", 
+      shortLabel: "Stats", 
+      icon: BarChart3,
+      tooltip: "Bekijk statistieken over al je scrapes. Success rates, meest gescrapede sites, etc."
+    },
+    { 
+      id: "proxy", 
+      label: "Proxy Management", 
+      shortLabel: "Proxy", 
+      icon: Server,
+      tooltip: "Beheer proxies voor rotatie en anti-bot bypass. Voeg proxies toe en monitor gezondheid."
+    },
   ];
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-4 md:p-8">
       <div className="container mx-auto py-8">
-        <header className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold mb-4 text-gray-900">
+        <header className="text-center mb-8">
+          <h1 className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">
             Web Scraper
           </h1>
+          <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
+            Scrape websites, extract data, analyseer content en exporteer naar Excel/PDF. 
+            Kies een tab hieronder om te beginnen.
+          </p>
         </header>
 
         {/* Tabs */}
@@ -122,29 +187,30 @@ function App() {
             {tabs.map((tab) => {
               const Icon = tab.icon;
               return (
-                <button
-                  key={tab.id}
-                  onClick={() => {
-                    setActiveTab(tab.id);
-                    // Scroll active tab into view
-                    const button = document.querySelector(`[data-tab-id="${tab.id}"]`);
-                    if (button) {
-                      button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                    }
-                  }}
-                  data-tab-id={tab.id}
-                  title={tab.label}
-                  className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-2 sm:px-3 md:px-4 lg:px-5 py-3 md:py-4 font-medium transition-colors whitespace-nowrap ${
-                    activeTab === tab.id
-                      ? "text-gray-900 border-b-2 border-gray-900 bg-gray-50"
-                      : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
-                  }`}
-                >
-                  <Icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-                  <span className="hidden sm:inline text-xs md:text-sm lg:text-base">
-                    {isLargeScreen ? tab.label : (tab.shortLabel || tab.label)}
-                  </span>
-                </button>
+                <Tooltip key={tab.id} content={tab.tooltip} position="bottom">
+                  <button
+                    onClick={() => {
+                      setActiveTab(tab.id);
+                      // Scroll active tab into view
+                      const button = document.querySelector(`[data-tab-id="${tab.id}"]`);
+                      if (button) {
+                        button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
+                      }
+                    }}
+                    data-tab-id={tab.id}
+                    title={tab.label}
+                    className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-2 sm:px-3 md:px-4 lg:px-5 py-3 md:py-4 font-medium transition-colors whitespace-nowrap ${
+                      activeTab === tab.id
+                        ? "text-gray-900 border-b-2 border-gray-900 bg-gray-50"
+                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    }`}
+                  >
+                    <Icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
+                    <span className="hidden sm:inline text-xs md:text-sm lg:text-base">
+                      {isLargeScreen ? tab.label : (tab.shortLabel || tab.label)}
+                    </span>
+                  </button>
+                </Tooltip>
               );
             })}
           </div>
