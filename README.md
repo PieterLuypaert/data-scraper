@@ -19,6 +19,8 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 - **Zoeken & Filteren**: Zoek en filter door gescrapede data
 - **Sorteren**: Sorteer resultaten op verschillende criteria
 - **Proxy Support**: Roterende proxies voor anti-bot bypass met health monitoring en automatische failover
+- **Multi-language Support**: UI beschikbaar in Nederlands, Engels, Frans, Duits en Spaans met automatische taal-detectie
+- **AI-powered Content Insights**: Automatische samenvattingen, categorisering, topic-detectie en sentiment-analyse per sectie
 - **Modern UI**: React + Shadcn UI met Tailwind CSS
 - **Responsive Design**: Werkt op alle apparaten
 - **Verbeterde UI/UX**: Tooltips, contextuele hints, help-teksten en empty states voor betere gebruikerservaring
@@ -51,7 +53,13 @@ data-scraper/
 │       ├── scrape.js           # Main scrape endpoint handler
 │       ├── custom.js           # Custom CSS selector endpoint
 │       ├── crawl.js            # Website crawler endpoint
-│       └── compare.js          # Change detection endpoint
+│       ├── compare.js          # Change detection endpoint
+│       ├── insights.js         # AI insights endpoint
+│       └── export.js          # Export endpoints (Excel, PDF)
+│   └── utils/
+│       ├── helpers.js          # Helper functions (URL conversion, attributes)
+│       ├── compare.js          # Change detection logic
+│       └── aiInsights.js       # Backend AI insights utilities
 ├── src/
 │   ├── api/
 │   │   └── scraper.js          # Frontend API calls
@@ -67,7 +75,17 @@ data-scraper/
 │   │   ├── ChangeDetection.jsx  # Change detection UI
 │   │   ├── SEOAnalysis.jsx  # SEO analysis component
 │   │   ├── DataVisualization.jsx  # Data visualization with charts
-│   │   └── SearchAndFilter.jsx  # Search and filter component
+│   │   ├── SearchAndFilter.jsx  # Search and filter component
+│   │   ├── AIInsights.jsx  # AI-powered content insights component
+│   │   └── LanguageSettings.jsx  # Language settings component
+│   ├── i18n/                 # Internationalization system
+│   │   ├── index.js          # i18n utilities and language management
+│   │   └── locales/         # Translation files
+│   │       ├── nl.json      # Dutch translations
+│   │       ├── en.json      # English translations
+│   │       ├── fr.json      # French translations
+│   │       ├── de.json      # German translations
+│   │       └── es.json      # Spanish translations
 │   ├── utils/
 │   │   ├── validation.js       # URL validation
 │   │   ├── clipboard.js        # Clipboard utilities
@@ -77,7 +95,9 @@ data-scraper/
 │   │   ├── contactExtraction.js  # Contact info extraction
 │   │   ├── contentAnalysis.js  # Content analysis utilities
 │   │   ├── languageDetection.js  # Language detection
-│   │   └── sentimentAnalysis.js  # Sentiment analysis
+│   │   ├── sentimentAnalysis.js  # Sentiment analysis
+│   │   ├── aiInsights.js  # AI-powered content insights utilities
+│   │   └── translation.js  # Translation utilities for scraped content
 │   ├── App.jsx                 # Main React component
 │   ├── main.jsx                # React entry point
 │   └── index.css               # Global styles
@@ -265,6 +285,35 @@ De SEO analyse controleert:
 
 De visualisaties zijn interactief met tooltips en responsive design.
 
+### AI-powered Content Insights
+
+1. Ga naar de "AI Insights" tab
+2. Scrape eerst een website (of selecteer uit geschiedenis)
+3. Bekijk automatisch gegenereerde insights:
+   - **Samenvatting**: Automatische samenvatting van de content (max 250 karakters)
+   - **Categorieën**: Automatische detectie van pagina type (blog, news, e-commerce, portfolio, corporate, etc.) met confidence scores
+   - **Topics/Thema's**: Detectie van belangrijke topics in de content met relevatiescores
+   - **Sentiment Analyse**: Algemene sentiment analyse (positief/negatief/neutraal) met scores
+   - **Sentiment per Sectie**: Gedetailleerde sentiment analyse voor headings, paragraphs, meta description en overall content
+
+De AI insights helpen je snel te begrijpen wat de belangrijkste aspecten van een website zijn zonder alle content door te lezen.
+
+### Multi-language Support
+
+1. Ga naar de "Instellingen" tab
+2. Kies je voorkeurstaal uit de beschikbare talen:
+   - Nederlands (standaard)
+   - English
+   - Français
+   - Deutsch
+   - Español
+3. De hele UI wordt direct vertaald naar de gekozen taal
+4. Je voorkeur wordt opgeslagen in je browser
+
+**Automatische Taal-detectie**: De applicatie detecteert automatisch de taal van gescrapede content en toont dit in de resultaten.
+
+**Localized Export Formats**: Datum en tijd formaten worden automatisch aangepast aan de gekozen taal bij export.
+
 ## Wat wordt er gescraped?
 
 De applicatie scrapet alle beschikbare data van een website:
@@ -336,6 +385,7 @@ De applicatie scrapet alle beschikbare data van een website:
 - **Content Analyse**: Meest voorkomende woorden, leesbaarheid, woordtelling
 - **Sentiment Analyse**: Positief/negatief/neutraal sentiment detectie
 - **SEO Analyse**: Volledige SEO score met issues, warnings en aanbevelingen
+- **AI-powered Insights**: Automatische samenvattingen, categorisering, topic-detectie en sentiment-analyse per sectie
 - **Screenshots**: Automatische screenshot capture (bij gebruik van Puppeteer)
 
 ### Statistieken
@@ -512,6 +562,13 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 - `server/routes/custom.js` - Custom CSS selector endpoint handler
 - `server/routes/crawl.js` - Website crawler endpoint handler
 - `server/routes/compare.js` - Change detection endpoint handler
+- `server/routes/insights.js` - AI insights endpoint handler
+
+#### Utilities
+
+- `server/utils/helpers.js` - Helper functies (URL conversion, attribute extraction)
+- `server/utils/compare.js` - Change detection logica
+- `server/utils/aiInsights.js` - Backend AI insights utilities (samenvattingen, categorisering, topics, sentiment)
 
 ### Frontend Structuur
 
@@ -530,6 +587,9 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 - `src/utils/contentAnalysis.js` - Content analyse utilities
 - `src/utils/languageDetection.js` - Taal detectie
 - `src/utils/sentimentAnalysis.js` - Sentiment analyse
+- `src/utils/aiInsights.js` - AI-powered content insights utilities (samenvattingen, categorisering, topics, sentiment)
+- `src/utils/translation.js` - Vertaling utilities voor gescrapede content
+- `src/i18n/index.js` - i18n systeem voor multi-language UI support
 
 #### Components
 
@@ -544,6 +604,8 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 - `src/components/SEOAnalysis.jsx` - SEO analysis component met score en aanbevelingen
 - `src/components/DataVisualization.jsx` - Data visualization met charts, word clouds en link graphs
 - `src/components/SearchAndFilter.jsx` - Zoeken en filteren component
+- `src/components/AIInsights.jsx` - AI-powered content insights component met samenvattingen, categorisering en sentiment analyse
+- `src/components/LanguageSettings.jsx` - Taalinstellingen component voor multi-language support
 - `src/components/ui/tooltip.jsx` - Tooltip component voor hover uitleg
 - `src/components/ui/help-text.jsx` - Help tekst en empty state componenten
 
@@ -716,6 +778,64 @@ Vergelijk twee scrapes om veranderingen te detecteren.
 }
 ```
 
+### POST /api/insights/generate
+
+Genereer AI-powered content insights voor gescrapede data.
+
+**Request:**
+
+```json
+{
+  "data": {
+    "title": "...",
+    "description": "...",
+    "fullText": "...",
+    "headings": {...},
+    "paragraphs": [...]
+  }
+}
+```
+
+**Response:**
+
+```json
+{
+  "success": true,
+  "insights": {
+    "summary": "Automatische samenvatting van de content...",
+    "categories": {
+      "primary": "blog",
+      "primaryConfidence": 85,
+      "secondary": "news",
+      "secondaryConfidence": 30,
+      "allCategories": [...]
+    },
+    "topics": [
+      {"name": "Technology", "score": 15, "relevance": 75},
+      {"name": "Business", "score": 8, "relevance": 40}
+    ],
+    "sentiment": {
+      "sentiment": "positive",
+      "score": 45,
+      "positive": 12,
+      "negative": 3,
+      "neutral": 85
+    },
+    "sentimentBySection": {
+      "headings": {...},
+      "paragraphs": {...},
+      "overall": {...},
+      "meta": {...}
+    },
+    "language": {
+      "language": "Nederlands",
+      "code": "nl",
+      "confidence": 92
+    }
+  }
+}
+```
+
 ### GET /health
 
 Health check endpoint om te controleren of de server draait.
@@ -827,6 +947,10 @@ http://user:pass@proxy.example.com:8080
 - Proxy support is optioneel en kan worden ingeschakeld via configuratie
 - UI/UX features zoals tooltips, help-teksten en empty states maken de applicatie gebruiksvriendelijker
 - Hover over elementen voor extra informatie en contextuele hints
+- Multi-language support: UI beschikbaar in 5 talen (Nederlands, Engels, Frans, Duits, Spaans)
+- Taalvoorkeur wordt opgeslagen in localStorage en blijft behouden tussen sessies
+- AI-powered insights worden automatisch gegenereerd wanneer je een website scrapet
+- Vertaling functionaliteit is beschikbaar maar vereist API-integratie voor volledige vertaling van content
 
 ## Browser Ondersteuning
 
