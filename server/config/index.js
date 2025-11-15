@@ -59,6 +59,27 @@ module.exports = {
     imageLoad: 2000,
     scrollWait: 1500,
     cookieWait: 1000
+  },
+
+  // Proxy configuration
+  PROXY: {
+    // Enable proxy support (set to false to disable)
+    enabled: process.env.PROXY_ENABLED === 'true' || false,
+    
+    // Proxy list - can be array of objects or strings
+    // Format 1: { host: 'proxy.example.com', port: 8080, username: 'user', password: 'pass', protocol: 'http' }
+    // Format 2: 'http://user:pass@proxy.example.com:8080'
+    proxies: process.env.PROXIES ? JSON.parse(process.env.PROXIES) : [],
+    
+    // Health check settings
+    healthCheckInterval: 5, // minutes
+    healthCheckTimeout: 10000, // milliseconds
+    healthCheckUrl: 'https://www.google.com',
+    maxConsecutiveFailures: 3,
+    
+    // Rotation settings
+    rotationEnabled: true,
+    failoverEnabled: true
   }
 };
 
