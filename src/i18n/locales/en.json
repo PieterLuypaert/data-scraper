@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Web Scraper",
+    "description": "Scrape websites, extract data, analyze content and export to Excel/PDF. Choose a tab below to get started."
+  },
+  "tabs": {
+    "scrape": "Scrape",
+    "crawl": "Crawl",
+    "custom": "Custom Selectors",
+    "bulk": "Bulk Scrape",
+    "history": "History",
+    "changes": "Change Detection",
+    "seo": "SEO Analysis",
+    "visualization": "Data Visualization",
+    "analytics": "Analytics",
+    "proxy": "Proxy Management",
+    "insights": "AI Insights",
+    "settings": "Settings"
+  },
+  "tooltips": {
+    "scrape": "Scrape a single webpage. Extracts links, images, text and more.",
+    "crawl": "Crawl an entire website. Automatically follows links and scrapes multiple pages.",
+    "custom": "Use CSS selectors to extract specific elements. For advanced users.",
+    "bulk": "Scrape multiple URLs at once. Useful for comparing different sites.",
+    "history": "View and manage your previous scrapes. Export or delete items.",
+    "changes": "Compare two scrapes and see what has changed on a website.",
+    "seo": "Analyze SEO aspects of a scraped page. Requires a scrape first.",
+    "visualization": "Visualize scraped data with charts and diagrams. Requires a scrape first.",
+    "analytics": "View statistics about all your scrapes. Success rates, most scraped sites, etc.",
+    "proxy": "Manage proxies for rotation and anti-bot bypass. Add proxies and monitor health.",
+    "insights": "AI-powered content insights: summaries, categorization, topics and sentiment analysis.",
+    "settings": "Manage language settings and other preferences."
+  },
+  "common": {
+    "scrape": "Scrape",
+    "export": "Export",
+    "delete": "Delete",
+    "cancel": "Cancel",
+    "save": "Save",
+    "close": "Close",
+    "loading": "Loading...",
+    "error": "Error",
+    "success": "Success",
+    "language": "Language",
+    "selectLanguage": "Select language"
+  },
+  "insights": {
+    "title": "AI Content Insights",
+    "summary": "Summary",
+    "categories": "Categories",
+    "topics": "Topics/Themes",
+    "sentiment": "Sentiment Analysis",
+    "sentimentBySection": "Sentiment by Section",
+    "generating": "Generating insights...",
+    "noData": "No data available for analysis",
+    "confidence": "Confidence",
+    "positive": "Positive",
+    "negative": "Negative",
+    "neutral": "Neutral"
+  },
+  "language": {
+    "detected": "Detected language",
+    "confidence": "Confidence",
+    "translate": "Translate content",
+    "translateTo": "Translate to",
+    "translating": "Translating...",
+    "translated": "Translated"
+  },
+  "export": {
+    "dateFormat": "MM/DD/YYYY",
+    "timeFormat": "hh:mm:ss A",
+    "datetimeFormat": "MM/DD/YYYY hh:mm:ss A"
+  }
+}
+

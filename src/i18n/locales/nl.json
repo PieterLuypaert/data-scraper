@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Web Scraper",
+    "description": "Scrape websites, extract data, analyseer content en exporteer naar Excel/PDF. Kies een tab hieronder om te beginnen."
+  },
+  "tabs": {
+    "scrape": "Scrapen",
+    "crawl": "Crawlen",
+    "custom": "Custom Selectors",
+    "bulk": "Bulk Scrapen",
+    "history": "Geschiedenis",
+    "changes": "Change Detection",
+    "seo": "SEO Analysis",
+    "visualization": "Data Visualization",
+    "analytics": "Analytics",
+    "proxy": "Proxy Management",
+    "insights": "AI Insights",
+    "settings": "Instellingen"
+  },
+  "tooltips": {
+    "scrape": "Scrape een enkele webpagina. Extraheert links, afbeeldingen, tekst en meer.",
+    "crawl": "Crawl een hele website. Volgt automatisch links en scrape meerdere pagina's.",
+    "custom": "Gebruik CSS selectors om specifieke elementen te extraheren. Voor gevorderde gebruikers.",
+    "bulk": "Scrape meerdere URLs tegelijk. Handig voor het vergelijken van verschillende sites.",
+    "history": "Bekijk en beheer je eerdere scrapes. Exporteer of verwijder items.",
+    "changes": "Vergelijk twee scrapes en zie wat er is veranderd op een website.",
+    "seo": "Analyseer SEO aspecten van een gescrapede pagina. Vereist eerst een scrape.",
+    "visualization": "Visualiseer scraped data met grafieken en diagrammen. Vereist eerst een scrape.",
+    "analytics": "Bekijk statistieken over al je scrapes. Success rates, meest gescrapede sites, etc.",
+    "proxy": "Beheer proxies voor rotatie en anti-bot bypass. Voeg proxies toe en monitor gezondheid.",
+    "insights": "AI-powered content insights: samenvattingen, categorisering, topics en sentiment analyse.",
+    "settings": "Beheer taalinstellingen en andere voorkeuren."
+  },
+  "common": {
+    "scrape": "Scrapen",
+    "export": "Exporteren",
+    "delete": "Verwijderen",
+    "cancel": "Annuleren",
+    "save": "Opslaan",
+    "close": "Sluiten",
+    "loading": "Laden...",
+    "error": "Fout",
+    "success": "Succes",
+    "language": "Taal",
+    "selectLanguage": "Selecteer taal"
+  },
+  "insights": {
+    "title": "AI Content Insights",
+    "summary": "Samenvatting",
+    "categories": "Categorieën",
+    "topics": "Topics/Thema's",
+    "sentiment": "Sentiment Analyse",
+    "sentimentBySection": "Sentiment per Sectie",
+    "generating": "Genereren van insights...",
+    "noData": "Geen data beschikbaar voor analyse",
+    "confidence": "Vertrouwen",
+    "positive": "Positief",
+    "negative": "Negatief",
+    "neutral": "Neutraal"
+  },
+  "language": {
+    "detected": "Gedetecteerde taal",
+    "confidence": "Vertrouwen",
+    "translate": "Vertaal content",
+    "translateTo": "Vertaal naar",
+    "translating": "Vertalen...",
+    "translated": "Vertaald"
+  },
+  "export": {
+    "dateFormat": "DD-MM-YYYY",
+    "timeFormat": "HH:mm:ss",
+    "datetimeFormat": "DD-MM-YYYY HH:mm:ss"
+  }
+}
+

@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Web Scraper",
+    "description": "Websites scrapen, Daten extrahieren, Inhalte analysieren und nach Excel/PDF exportieren. Wählen Sie unten einen Tab aus, um zu beginnen."
+  },
+  "tabs": {
+    "scrape": "Scrapen",
+    "crawl": "Crawlen",
+    "custom": "Benutzerdefinierte Selektoren",
+    "bulk": "Massen-Scraping",
+    "history": "Verlauf",
+    "changes": "Änderungserkennung",
+    "seo": "SEO-Analyse",
+    "visualization": "Datenvisualisierung",
+    "analytics": "Analytik",
+    "proxy": "Proxy-Verwaltung",
+    "insights": "KI-Insights",
+    "settings": "Einstellungen"
+  },
+  "tooltips": {
+    "scrape": "Eine einzelne Webseite scrapen. Extrahiert Links, Bilder, Text und mehr.",
+    "crawl": "Eine gesamte Website crawlen. Folgt automatisch Links und scrapet mehrere Seiten.",
+    "custom": "Verwenden Sie CSS-Selektoren, um spezifische Elemente zu extrahieren. Für fortgeschrittene Benutzer.",
+    "bulk": "Mehrere URLs gleichzeitig scrapen. Nützlich zum Vergleichen verschiedener Websites.",
+    "history": "Zeigen Sie Ihre vorherigen Scrapes an und verwalten Sie sie. Elemente exportieren oder löschen.",
+    "changes": "Vergleichen Sie zwei Scrapes und sehen Sie, was sich auf einer Website geändert hat.",
+    "seo": "Analysieren Sie SEO-Aspekte einer gescrapten Seite. Erfordert zuerst einen Scrape.",
+    "visualization": "Visualisieren Sie gescrapte Daten mit Diagrammen und Grafiken. Erfordert zuerst einen Scrape.",
+    "analytics": "Zeigen Sie Statistiken über alle Ihre Scrapes an. Erfolgsquoten, meistgescrapte Websites usw.",
+    "proxy": "Verwalten Sie Proxies für Rotation und Anti-Bot-Bypass. Proxies hinzufügen und Gesundheit überwachen.",
+    "insights": "KI-gestützte Content-Insights: Zusammenfassungen, Kategorisierung, Themen und Sentiment-Analyse.",
+    "settings": "Spracheinstellungen und andere Präferenzen verwalten."
+  },
+  "common": {
+    "scrape": "Scrapen",
+    "export": "Exportieren",
+    "delete": "Löschen",
+    "cancel": "Abbrechen",
+    "save": "Speichern",
+    "close": "Schließen",
+    "loading": "Laden...",
+    "error": "Fehler",
+    "success": "Erfolg",
+    "language": "Sprache",
+    "selectLanguage": "Sprache auswählen"
+  },
+  "insights": {
+    "title": "KI-Content-Insights",
+    "summary": "Zusammenfassung",
+    "categories": "Kategorien",
+    "topics": "Themen",
+    "sentiment": "Sentiment-Analyse",
+    "sentimentBySection": "Sentiment nach Abschnitt",
+    "generating": "Generieren von Insights...",
+    "noData": "Keine Daten für die Analyse verfügbar",
+    "confidence": "Vertrauen",
+    "positive": "Positiv",
+    "negative": "Negativ",
+    "neutral": "Neutral"
+  },
+  "language": {
+    "detected": "Erkannte Sprache",
+    "confidence": "Vertrauen",
+    "translate": "Inhalt übersetzen",
+    "translateTo": "Übersetzen nach",
+    "translating": "Übersetzen...",
+    "translated": "Übersetzt"
+  },
+  "export": {
+    "dateFormat": "DD.MM.YYYY",
+    "timeFormat": "HH:mm:ss",
+    "datetimeFormat": "DD.MM.YYYY HH:mm:ss"
+  }
+}
+

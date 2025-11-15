@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Web Scraper",
+    "description": "Scrapez des sites web, extrayez des données, analysez le contenu et exportez vers Excel/PDF. Choisissez un onglet ci-dessous pour commencer."
+  },
+  "tabs": {
+    "scrape": "Scraper",
+    "crawl": "Explorer",
+    "custom": "Sélecteurs personnalisés",
+    "bulk": "Scraping en masse",
+    "history": "Historique",
+    "changes": "Détection de changements",
+    "seo": "Analyse SEO",
+    "visualization": "Visualisation des données",
+    "analytics": "Analytique",
+    "proxy": "Gestion des proxies",
+    "insights": "Insights IA",
+    "settings": "Paramètres"
+  },
+  "tooltips": {
+    "scrape": "Scrapez une seule page web. Extrait les liens, images, texte et plus.",
+    "crawl": "Explorez un site web entier. Suit automatiquement les liens et scrape plusieurs pages.",
+    "custom": "Utilisez des sélecteurs CSS pour extraire des éléments spécifiques. Pour utilisateurs avancés.",
+    "bulk": "Scrapez plusieurs URLs à la fois. Utile pour comparer différents sites.",
+    "history": "Visualisez et gérez vos scrapes précédents. Exportez ou supprimez des éléments.",
+    "changes": "Comparez deux scrapes et voyez ce qui a changé sur un site web.",
+    "seo": "Analysez les aspects SEO d'une page scrapée. Nécessite d'abord un scrape.",
+    "visualization": "Visualisez les données scrapées avec des graphiques et diagrammes. Nécessite d'abord un scrape.",
+    "analytics": "Visualisez les statistiques sur tous vos scrapes. Taux de succès, sites les plus scrapés, etc.",
+    "proxy": "Gérez les proxies pour la rotation et le contournement anti-bot. Ajoutez des proxies et surveillez la santé.",
+    "insights": "Insights de contenu alimentés par l'IA : résumés, catégorisation, sujets et analyse de sentiment.",
+    "settings": "Gérez les paramètres de langue et autres préférences."
+  },
+  "common": {
+    "scrape": "Scraper",
+    "export": "Exporter",
+    "delete": "Supprimer",
+    "cancel": "Annuler",
+    "save": "Enregistrer",
+    "close": "Fermer",
+    "loading": "Chargement...",
+    "error": "Erreur",
+    "success": "Succès",
+    "language": "Langue",
+    "selectLanguage": "Sélectionner la langue"
+  },
+  "insights": {
+    "title": "Insights de contenu IA",
+    "summary": "Résumé",
+    "categories": "Catégories",
+    "topics": "Sujets/Thèmes",
+    "sentiment": "Analyse de sentiment",
+    "sentimentBySection": "Sentiment par section",
+    "generating": "Génération d'insights...",
+    "noData": "Aucune donnée disponible pour l'analyse",
+    "confidence": "Confiance",
+    "positive": "Positif",
+    "negative": "Négatif",
+    "neutral": "Neutre"
+  },
+  "language": {
+    "detected": "Langue détectée",
+    "confidence": "Confiance",
+    "translate": "Traduire le contenu",
+    "translateTo": "Traduire en",
+    "translating": "Traduction...",
+    "translated": "Traduit"
+  },
+  "export": {
+    "dateFormat": "DD/MM/YYYY",
+    "timeFormat": "HH:mm:ss",
+    "datetimeFormat": "DD/MM/YYYY HH:mm:ss"
+  }
+}
+

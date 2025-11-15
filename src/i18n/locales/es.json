@@ -1,0 +1,75 @@
+{
+  "app": {
+    "title": "Web Scraper",
+    "description": "Raspa sitios web, extrae datos, analiza contenido y exporta a Excel/PDF. Elige una pestaña a continuación para comenzar."
+  },
+  "tabs": {
+    "scrape": "Raspar",
+    "crawl": "Explorar",
+    "custom": "Selectores personalizados",
+    "bulk": "Raspado masivo",
+    "history": "Historial",
+    "changes": "Detección de cambios",
+    "seo": "Análisis SEO",
+    "visualization": "Visualización de datos",
+    "analytics": "Analíticas",
+    "proxy": "Gestión de proxies",
+    "insights": "Insights de IA",
+    "settings": "Configuración"
+  },
+  "tooltips": {
+    "scrape": "Raspa una sola página web. Extrae enlaces, imágenes, texto y más.",
+    "crawl": "Explora un sitio web completo. Sigue automáticamente los enlaces y raspa múltiples páginas.",
+    "custom": "Usa selectores CSS para extraer elementos específicos. Para usuarios avanzados.",
+    "bulk": "Raspa múltiples URLs a la vez. Útil para comparar diferentes sitios.",
+    "history": "Visualiza y gestiona tus raspados anteriores. Exporta o elimina elementos.",
+    "changes": "Compara dos raspados y ve qué ha cambiado en un sitio web.",
+    "seo": "Analiza aspectos SEO de una página raspada. Requiere primero un raspado.",
+    "visualization": "Visualiza datos raspados con gráficos y diagramas. Requiere primero un raspado.",
+    "analytics": "Visualiza estadísticas sobre todos tus raspados. Tasas de éxito, sitios más raspados, etc.",
+    "proxy": "Gestiona proxies para rotación y bypass anti-bot. Añade proxies y monitorea la salud.",
+    "insights": "Insights de contenido impulsados por IA: resúmenes, categorización, temas y análisis de sentimiento.",
+    "settings": "Gestiona configuraciones de idioma y otras preferencias."
+  },
+  "common": {
+    "scrape": "Raspar",
+    "export": "Exportar",
+    "delete": "Eliminar",
+    "cancel": "Cancelar",
+    "save": "Guardar",
+    "close": "Cerrar",
+    "loading": "Cargando...",
+    "error": "Error",
+    "success": "Éxito",
+    "language": "Idioma",
+    "selectLanguage": "Seleccionar idioma"
+  },
+  "insights": {
+    "title": "Insights de contenido IA",
+    "summary": "Resumen",
+    "categories": "Categorías",
+    "topics": "Temas",
+    "sentiment": "Análisis de sentimiento",
+    "sentimentBySection": "Sentimiento por sección",
+    "generating": "Generando insights...",
+    "noData": "No hay datos disponibles para análisis",
+    "confidence": "Confianza",
+    "positive": "Positivo",
+    "negative": "Negativo",
+    "neutral": "Neutral"
+  },
+  "language": {
+    "detected": "Idioma detectado",
+    "confidence": "Confianza",
+    "translate": "Traducir contenido",
+    "translateTo": "Traducir a",
+    "translating": "Traduciendo...",
+    "translated": "Traducido"
+  },
+  "export": {
+    "dateFormat": "DD/MM/YYYY",
+    "timeFormat": "HH:mm:ss",
+    "datetimeFormat": "DD/MM/YYYY HH:mm:ss"
+  }
+}
+
