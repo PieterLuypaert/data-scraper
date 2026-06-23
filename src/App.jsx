@@ -31,6 +31,9 @@ import {
   Menu,
   X,
   ArrowRight,
+  PanelLeftClose,
+  PanelLeftOpen,
+  ChevronDown,
 } from "lucide-react";
 
 function App() {
@@ -38,11 +41,24 @@ function App() {
   const [crawlData, setCrawlData] = useState(null); // Store full crawl data with all pages
   const [activeTab, setActiveTab] = useState("scrape");
   const [sidebarOpen, setSidebarOpen] = useState(false);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(
+    () => localStorage.getItem("sidebar_collapsed") === "true"
+  );
+  const [expandedGroups, setExpandedGroups] = useState({
+    collect: true,
+    analyze: true,
+    manage: true,
+  });
   const [currentUrl, setCurrentUrl] = useState(null);
   const [currentLanguage, setCurrentLanguage] = useState(() => {
     // Get language from localStorage or default
     return localStorage.getItem('app_language') || 'nl';
   });
+
+  // Persist the desktop sidebar collapsed state across sessions.
+  useEffect(() => {
+    localStorage.setItem("sidebar_collapsed", String(sidebarCollapsed));
+  }, [sidebarCollapsed]);
 
   // Listen for language changes (re-renders so t() picks up the new language)
   useEffect(() => {
@@ -188,6 +204,8 @@ function App() {
     setActiveTab(id);
     setSidebarOpen(false);
   };
+  const toggleGroup = (key) =>
+    setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
 
   // Capabilities shown on the landing (scrape) page so it's visually clear
   // what each part of the app does.
@@ -257,12 +275,26 @@ function App() {
   );
 
   const SidebarNav = () => (
-    <nav className="flex flex-col gap-6">
-      {navGroups.map((group) => (
+    <nav className="flex flex-col gap-3">
+      {navGroups.map((group) => {
+        const isOpen = expandedGroups[group.key];
+        return (
         <div key={group.key}>
-          <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-indigo-400/90">
-            {t(`tabGroups.${group.key}`)}
-          </p>
+          <button
+            type="button"
+            onClick={() => toggleGroup(group.key)}
+            aria-expanded={isOpen}
+            className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-400/90 transition-colors hover:bg-white/40 hover:text-indigo-600"
+          >
+            <span>{t(`tabGroups.${group.key}`)}</span>
+            <ChevronDown
+              className={cn(
+                "h-3.5 w-3.5 transition-transform duration-200",
+                isOpen ? "rotate-0" : "-rotate-90"
+              )}
+            />
+          </button>
+          {isOpen && (
           <div className="flex flex-col gap-1">
             {group.ids.map((id) => {
               const tab = tabById(id);
@@ -303,8 +335,10 @@ function App() {
               );
             })}
           </div>
+          )}
         </div>
-      ))}
+        );
+      })}
     </nav>
   );
 
@@ -322,17 +356,21 @@ function App() {
       <div className="flex h-screen">
         {/* Sidebar (desktop) */}
         <aside
-          className={`sticky top-0 hidden h-screen w-72 flex-shrink-0 border-r lg:flex ${sidebarPanelClass}`}
+          className={`sticky top-0 hidden h-screen w-72 flex-shrink-0 border-r ${
+            sidebarCollapsed ? "" : "lg:flex"
+          } ${sidebarPanelClass}`}
         >
           {SidebarAmbient()}
+          {/* Collapse handle on the sidebar's right edge */}
+          <button
+            onClick={() => setSidebarCollapsed(true)}
+            aria-label="Sidebar inklappen"
+            title="Sidebar inklappen"
+            className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border border-r-0 border-indigo-200/60 bg-white/80 py-3 pl-1.5 pr-1 text-gray-500 shadow-soft backdrop-blur transition-colors hover:bg-indigo-50 hover:text-indigo-700"
+          >
+            <PanelLeftClose className="h-4 w-4" />
+          </button>
           <div className="relative px-6 pt-7 pb-5">
-            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-3 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">
-              <span className="relative flex h-1.5 w-1.5">
-                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
-              </span>
-              Web Scraping Studio
-            </div>
             <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
               {t("app.title")}
             </h1>
@@ -345,6 +383,18 @@ function App() {
           </div>
           {SidebarFooter()}
         </aside>
+
+        {/* Desktop expand handle on the left edge (only when collapsed) */}
+        {sidebarCollapsed && (
+          <button
+            onClick={() => setSidebarCollapsed(false)}
+            aria-label="Sidebar uitklappen"
+            title="Sidebar uitklappen"
+            className="fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-lg border border-l-0 border-indigo-200/60 bg-white/70 py-3 pl-1 pr-1.5 text-gray-400 shadow-soft backdrop-blur transition-colors hover:bg-indigo-50 hover:text-indigo-700 lg:flex"
+          >
+            <PanelLeftOpen className="h-4 w-4" />
+          </button>
+        )}
 
         {/* Mobile slide-over sidebar */}
         {sidebarOpen && (
@@ -359,13 +409,6 @@ function App() {
               {SidebarAmbient()}
               <div className="relative flex items-center justify-between px-6 pt-6 pb-4">
                 <div className="min-w-0">
-                  <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700">
-                    <span className="relative flex h-1.5 w-1.5">
-                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
-                    </span>
-                    Web Scraping Studio
-                  </div>
                   <h1 className="truncate text-xl font-extrabold tracking-tight text-gradient-brand">
                     {t("app.title")}
                   </h1>
