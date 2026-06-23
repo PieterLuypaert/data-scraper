@@ -70,6 +70,10 @@
     "dateFormat": "MM/DD/YYYY",
     "timeFormat": "hh:mm:ss A",
     "datetimeFormat": "MM/DD/YYYY hh:mm:ss A"
+  },
+  "tabGroups": {
+    "collect": "Collect",
+    "analyze": "Analyze",
+    "manage": "Manage"
   }
 }
-

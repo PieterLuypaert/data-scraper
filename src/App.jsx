@@ -13,8 +13,6 @@ import { DataVisualization } from "./components/DataVisualization";
 import { ProxyManager } from "./components/ProxyManager";
 import { AIInsights } from "./components/AIInsights";
 import { LanguageSettings } from "./components/LanguageSettings";
-import { Button } from "./components/ui/button";
-import { Tooltip } from "./components/ui/tooltip";
 import { t } from "./i18n";
 import {
   Globe,
@@ -29,28 +27,22 @@ import {
   Server,
   Brain,
   Languages,
+  Menu,
+  X,
 } from "lucide-react";
 
 function App() {
   const [scrapedData, setScrapedData] = useState(null);
   const [crawlData, setCrawlData] = useState(null); // Store full crawl data with all pages
   const [activeTab, setActiveTab] = useState("scrape");
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [currentUrl, setCurrentUrl] = useState(null);
-  const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
   const [currentLanguage, setCurrentLanguage] = useState(() => {
     // Get language from localStorage or default
     return localStorage.getItem('app_language') || 'nl';
   });
 
-  useEffect(() => {
-    const handleResize = () => {
-      setIsLargeScreen(window.innerWidth >= 1024);
-    };
-    window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
-  }, []);
-
-  // Listen for language changes
+  // Listen for language changes (re-renders so t() picks up the new language)
   useEffect(() => {
     const handleLanguageChange = (e) => {
       setCurrentLanguage(e.detail.language);
@@ -58,16 +50,6 @@ function App() {
     window.addEventListener('languageChanged', handleLanguageChange);
     return () => window.removeEventListener('languageChanged', handleLanguageChange);
   }, []);
-
-  // Scroll active tab into view when it changes
-  useEffect(() => {
-    const activeButton = document.querySelector(`[data-tab-id="${activeTab}"]`);
-    if (activeButton) {
-      setTimeout(() => {
-        activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-      }, 100);
-    }
-  }, [activeTab]);
 
   const handleScrapeSuccess = (data, url) => {
     setScrapedData(data);
@@ -194,6 +176,57 @@ function App() {
     },
   ];
 
+  const navGroups = [
+    { key: "collect", ids: ["scrape", "crawl", "custom", "bulk"] },
+    { key: "analyze", ids: ["seo", "visualization", "insights", "analytics"] },
+    { key: "manage", ids: ["history", "changes", "proxy", "settings"] },
+  ];
+  const tabById = (id) => tabs.find((tt) => tt.id === id);
+  const activeMeta = tabs.find((tt) => tt.id === activeTab);
+
+  const selectTab = (id) => {
+    setActiveTab(id);
+    setSidebarOpen(false);
+  };
+
+  const SidebarNav = () => (
+    <nav className="flex flex-col gap-6">
+      {navGroups.map((group) => (
+        <div key={group.key}>
+          <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+            {t(`tabGroups.${group.key}`)}
+          </p>
+          <div className="flex flex-col gap-1">
+            {group.ids.map((id) => {
+              const tab = tabById(id);
+              if (!tab) return null;
+              const Icon = tab.icon;
+              const isActive = activeTab === id;
+              return (
+                <button
+                  key={id}
+                  onClick={() => selectTab(id)}
+                  className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
+                    isActive
+                      ? "bg-indigo-600 text-white shadow-soft"
+                      : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
+                  }`}
+                >
+                  <Icon
+                    className={`h-[18px] w-[18px] flex-shrink-0 transition-colors ${
+                      isActive ? "text-white" : "text-gray-400 group-hover:text-indigo-600"
+                    }`}
+                  />
+                  <span className="truncate">{tab.getLabel()}</span>
+                </button>
+              );
+            })}
+          </div>
+        </div>
+      ))}
+    </nav>
+  );
+
   return (
     <div className="relative min-h-screen bg-background">
       {/* Ambient background */}
@@ -205,75 +238,85 @@ function App() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/40 to-background" />
       </div>
 
-      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
-        <header className="mb-10 flex flex-col items-center text-center">
-          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/70 px-4 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm backdrop-blur">
-            <span className="relative flex h-2 w-2">
-              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
-              <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
-            </span>
-            Web Scraping Studio
-          </div>
-          <div className="mb-4 flex items-center justify-center">
-            <h1 className="text-4xl font-extrabold tracking-tight text-gradient-brand md:text-5xl">
+      <div className="flex min-h-screen">
+        {/* Sidebar (desktop) */}
+        <aside className="sticky top-0 hidden h-screen w-72 flex-shrink-0 flex-col border-r border-gray-200/70 bg-white/70 backdrop-blur-xl lg:flex">
+          <div className="px-6 pt-7 pb-5">
+            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">
+              <span className="relative flex h-1.5 w-1.5">
+                <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+                <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
+              </span>
+              Web Scraping Studio
+            </div>
+            <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
               {t("app.title")}
             </h1>
           </div>
-          <p className="max-w-2xl text-sm text-gray-500 md:text-base">
-            {t("app.description")}
-          </p>
-        </header>
+          <div className="flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
+            <SidebarNav />
+          </div>
+          <div className="border-t border-gray-200/70 px-6 py-4 text-xs text-gray-400">
+            Developed by Pieter Luypaert
+          </div>
+        </aside>
 
-        {/* Tabs */}
-        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white/80 shadow-elevated backdrop-blur-xl">
-          <div
-            className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-100 bg-gray-50/60 p-2"
-            style={{
-              scrollbarWidth: 'none',
-              msOverflowStyle: 'none',
-              WebkitOverflowScrolling: 'touch'
-            }}
-          >
-            {tabs.map((tab) => {
-              const Icon = tab.icon;
-              const label = tab.getLabel();
-              const shortLabel = tab.getShortLabel();
-              const tooltip = tab.getTooltip();
-              const isActive = activeTab === tab.id;
-              return (
-                <Tooltip key={tab.id} content={tooltip} position="bottom">
-                  <button
-                    onClick={() => {
-                      setActiveTab(tab.id);
-                      // Scroll active tab into view
-                      const button = document.querySelector(`[data-tab-id="${tab.id}"]`);
-                      if (button) {
-                        button.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'center' });
-                      }
-                    }}
-                    data-tab-id={tab.id}
-                    title={label}
-                    className={`group flex flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 md:px-4 ${
-                      isActive
-                        ? "bg-white text-indigo-700 shadow-soft ring-1 ring-indigo-100"
-                        : "text-gray-500 hover:bg-white/70 hover:text-gray-900"
-                    }`}
-                  >
-                    <Icon
-                      className={`h-4 w-4 flex-shrink-0 transition-colors md:h-[18px] md:w-[18px] ${
-                        isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600"
-                      }`}
-                    />
-                    <span className="hidden text-xs sm:inline md:text-sm">
-                      {isLargeScreen ? label : (shortLabel || label)}
-                    </span>
-                  </button>
-                </Tooltip>
-              );
-            })}
+        {/* Mobile slide-over sidebar */}
+        {sidebarOpen && (
+          <div className="fixed inset-0 z-50 lg:hidden">
+            <div
+              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
+              onClick={() => setSidebarOpen(false)}
+            />
+            <aside className="absolute left-0 top-0 flex h-full w-72 max-w-[85%] flex-col bg-white shadow-elevated animate-fade-in-up">
+              <div className="flex items-center justify-between px-6 pt-6 pb-4">
+                <h1 className="text-xl font-extrabold tracking-tight text-gradient-brand">
+                  {t("app.title")}
+                </h1>
+                <button
+                  onClick={() => setSidebarOpen(false)}
+                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                >
+                  <X className="h-5 w-5" />
+                </button>
+              </div>
+              <div className="flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
+                <SidebarNav />
+              </div>
+            </aside>
+          </div>
+        )}
+
+        {/* Main content */}
+        <div className="flex min-w-0 flex-1 flex-col">
+          {/* Top bar */}
+          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8">
+            <button
+              onClick={() => setSidebarOpen(true)}
+              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
+              aria-label="Menu"
+            >
+              <Menu className="h-5 w-5" />
+            </button>
+            {activeMeta && (
+              <div className="flex min-w-0 items-center gap-3">
+                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
+                  <activeMeta.icon className="h-[18px] w-[18px]" />
+                </div>
+                <div className="min-w-0">
+                  <h2 className="truncate text-base font-bold text-gray-900">
+                    {activeMeta.getLabel()}
+                  </h2>
+                  <p className="truncate text-xs text-gray-500">
+                    {activeMeta.getTooltip()}
+                  </p>
+                </div>
+              </div>
+            )}
           </div>
 
-          <div key={activeTab} className="animate-fade-in-up p-6 md:p-8">
+          <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 md:px-8 md:py-8">
+            <div key={activeTab} className="animate-fade-in-up">
             {activeTab === "scrape" && (
               <ScrapeForm
                 onScrapeSuccess={(data) => handleScrapeSuccess(data)}
@@ -346,22 +389,23 @@ function App() {
             {activeTab === "analytics" && <AnalyticsDashboard />}
             {activeTab === "proxy" && <ProxyManager />}
             {activeTab === "settings" && <LanguageSettings />}
-          </div>
+            </div>
+
+            {/* Results */}
+            {scrapedData && (activeTab === "scrape" || activeTab === "custom" || activeTab === "crawl") && (
+              <div id="results" className="mt-8">
+                <ScrapeResultsExtended data={scrapedData} crawlData={crawlData} />
+              </div>
+            )}
+
+            {/* Footer (mobile — desktop credit lives in the sidebar) */}
+            <footer className="mt-14 flex items-center justify-center gap-2 text-sm text-gray-400 lg:hidden">
+              <span className="h-px w-8 bg-gray-200" />
+              <p>Developed by Pieter Luypaert</p>
+              <span className="h-px w-8 bg-gray-200" />
+            </footer>
+          </main>
         </div>
-
-        {/* Results */}
-        {scrapedData && (activeTab === "scrape" || activeTab === "custom" || activeTab === "crawl") && (
-          <div id="results" className="mt-8">
-            <ScrapeResultsExtended data={scrapedData} crawlData={crawlData} />
-          </div>
-        )}
-
-        {/* Footer */}
-        <footer className="mt-14 flex items-center justify-center gap-2 text-sm text-gray-400">
-          <span className="h-px w-8 bg-gray-200" />
-          <p>Developed by Pieter Luypaert</p>
-          <span className="h-px w-8 bg-gray-200" />
-        </footer>
       </div>
     </div>
   );
