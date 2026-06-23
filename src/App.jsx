@@ -14,6 +14,7 @@ import { ProxyManager } from "./components/ProxyManager";
 import { AIInsights } from "./components/AIInsights";
 import { LanguageSettings } from "./components/LanguageSettings";
 import { t } from "./i18n";
+import { cn } from "@/lib/utils";
 import {
   Globe,
   BarChart3,
@@ -221,22 +222,32 @@ function App() {
                 <button
                   key={id}
                   onClick={() => selectTab(id)}
-                  className={`group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all duration-150 ${
+                  aria-current={isActive ? "page" : undefined}
+                  className={cn(
+                    "group relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-semibold transition-all duration-200",
                     isActive
-                      ? "bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 text-white shadow-soft ring-1 ring-indigo-500/25"
-                      : "text-gray-600 hover:bg-white/70 hover:text-indigo-700 hover:shadow-sm hover:ring-1 hover:ring-indigo-100/80"
-                  }`}
+                      ? "bg-white/95 text-indigo-800 shadow-soft ring-1 ring-indigo-200/80"
+                      : "text-gray-600 hover:bg-white/55 hover:text-indigo-700 hover:shadow-sm hover:ring-1 hover:ring-indigo-100/70"
+                  )}
                 >
                   <span
-                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                    className={cn(
+                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-200",
                       isActive
-                        ? "bg-white/20 text-white"
+                        ? "bg-indigo-600 text-white shadow-sm"
                         : "bg-gray-100/80 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600"
-                    }`}
+                    )}
                   >
-                    <Icon className="h-[17px] w-[17px]" />
+                    <Icon
+                      className={cn(
+                        "h-[17px] w-[17px]",
+                        isActive ? "text-white" : "text-current"
+                      )}
+                    />
                   </span>
-                  <span className="truncate">{tab.getLabel()}</span>
+                  <span className={cn("truncate", isActive && "font-bold")}>
+                    {tab.getLabel()}
+                  </span>
                 </button>
               );
             })}
