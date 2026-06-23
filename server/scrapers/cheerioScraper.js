@@ -1,6 +1,7 @@
 const axios = require('axios');
 const config = require('../config');
 const getProxyManager = require('../utils/proxyManagerInstance');
+const { safeLookup, beforeRedirect } = require('../utils/ssrfGuard');
 
 /**
  * Scrape a URL using Axios (for simple sites)
@@ -23,6 +24,10 @@ async function scrapeWithCheerio(url, proxy = null) {
       
       const axiosConfig = {
         timeout: 30000,
+        // Re-validate every connection (incl. each redirect hop) against the
+        // SSRF blocklist; closes redirect-based SSRF and DNS-rebinding.
+        lookup: safeLookup,
+        beforeRedirect,
         headers: {
           'User-Agent': config.USER_AGENT,
           'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',

@@ -7,18 +7,27 @@ module.exports = {
   // Puppeteer configuration
   PUPPETEER: {
     args: [
-      '--no-sandbox',
-      '--disable-setuid-sandbox',
+      // Sandbox stays ENABLED by default (secure). It can only be disabled
+      // explicitly via PUPPETEER_NO_SANDBOX=true for environments where the
+      // sandbox cannot run (e.g. Docker / Linux-as-root). Do NOT disable it
+      // casually: it is the primary defense when rendering untrusted pages.
+      ...(process.env.PUPPETEER_NO_SANDBOX === 'true'
+        ? ['--no-sandbox', '--disable-setuid-sandbox']
+        : []),
       '--disable-dev-shm-usage',
       '--disable-accelerated-2d-canvas',
       '--no-first-run',
       '--no-zygote',
       '--disable-gpu',
       '--disable-blink-features=AutomationControlled',
-      '--disable-features=IsolateOrigins,site-per-process',
-      '--disable-web-security',
       '--disable-features=VizDisplayCompositor'
+      // Removed for security: --disable-web-security and
+      // --disable-features=IsolateOrigins,site-per-process weakened the
+      // browser's same-origin / site-isolation protections with no scraping
+      // benefit (we only read the rendered DOM).
     ],
+    // Kept true so sites with invalid/self-signed certificates can still be
+    // scraped; disabling this would break legitimate functionality.
     ignoreHTTPSErrors: true,
     timeout: 60000
   },

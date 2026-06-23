@@ -2,6 +2,7 @@ const { scrapeWithPuppeteer } = require('../scrapers/puppeteerScraper');
 const { scrapeWithCheerio } = require('../scrapers/cheerioScraper');
 const { needsPuppeteer } = require('../utils/helpers');
 const { toAbsoluteUrl, extractAttributes } = require('../utils/helpers');
+const { assertSafeUrl } = require('../utils/ssrfGuard');
 const config = require('../config');
 const cheerio = require('cheerio');
 
@@ -15,7 +16,14 @@ async function handleCustomSelectors(req, res) {
     if (!url || !selectors || !Array.isArray(selectors)) {
       return res.status(400).json({ success: false, error: 'URL and selectors array are required' });
     }
-    
+
+    // SSRF protection: reject private/internal targets and non-http(s) schemes
+    try {
+      await assertSafeUrl(url);
+    } catch (guardError) {
+      return res.status(400).json({ success: false, error: guardError.message });
+    }
+
     // Use same logic as main scrape endpoint
     let htmlContent, finalUrl;
     const usePuppeteer = needsPuppeteer(url, config.JS_HEAVY_SITES);

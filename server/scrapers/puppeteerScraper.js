@@ -2,6 +2,7 @@ const puppeteer = require('puppeteer');
 const axios = require('axios');
 const config = require('../config');
 const getProxyManager = require('../utils/proxyManagerInstance');
+const { assertSafeUrl, safeLookup, beforeRedirect } = require('../utils/ssrfGuard');
 
 /**
  * Wait for specified milliseconds (compatible with all Puppeteer versions)
@@ -181,6 +182,23 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
         }
       }
     
+    // SSRF protection: validate every main-frame navigation (including
+    // server-side redirects and meta-refresh / JS navigations) against the
+    // blocklist and abort connections to private/internal hosts. Sub-resource
+    // and cross-frame requests are passed through untouched.
+    await page.setRequestInterception(true);
+    page.on('request', async (request) => {
+      try {
+        if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+          await assertSafeUrl(request.url());
+        }
+        await request.continue();
+      } catch (err) {
+        console.log(`Aborting unsafe navigation: ${request.url()} (${err.message})`);
+        try { await request.abort('blockedbyclient'); } catch (_) { /* already handled */ }
+      }
+    });
+
     // Remove webdriver property to avoid detection
     await page.evaluateOnNewDocument(() => {
       Object.defineProperty(navigator, 'webdriver', {
@@ -395,6 +413,10 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
         try {
           const axiosConfig = {
             timeout: 30000,
+            // Re-validate every connection (incl. each redirect hop) against
+            // the SSRF blocklist.
+            lookup: safeLookup,
+            beforeRedirect,
             headers: {
               'User-Agent': config.USER_AGENT,
               'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',

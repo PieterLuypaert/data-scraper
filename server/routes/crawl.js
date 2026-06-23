@@ -1,4 +1,5 @@
 const { crawlWebsite } = require('../scrapers/crawler');
+const { assertSafeUrl } = require('../utils/ssrfGuard');
 
 // Store progress for each crawl session
 const crawlProgress = new Map();
@@ -46,6 +47,13 @@ async function handleCrawl(req, res) {
     validUrl = new URL(url);
   } catch (error) {
     return res.status(400).json({ error: 'Invalid URL format' });
+  }
+
+  // SSRF protection: reject private/internal targets and non-http(s) schemes
+  try {
+    await assertSafeUrl(url);
+  } catch (error) {
+    return res.status(400).json({ error: error.message });
   }
 
   // Generate session ID

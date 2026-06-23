@@ -3,6 +3,7 @@ const { scrapeWithCheerio } = require('./cheerioScraper');
 const { extractAllData } = require('./dataExtractors');
 const { needsPuppeteer } = require('../utils/helpers');
 const { toAbsoluteUrl } = require('../utils/helpers');
+const { assertSafeUrl } = require('../utils/ssrfGuard');
 const config = require('../config');
 const cheerio = require('cheerio');
 
@@ -89,6 +90,14 @@ async function crawlWebsite(startUrl, options = {}) {
 
     // Mark as visited
     visitedUrls.add(url);
+
+    // SSRF protection: skip any link resolving to a private/internal address
+    try {
+      await assertSafeUrl(url);
+    } catch (guardError) {
+      console.log(`Skipping unsafe URL (${guardError.message}): ${url}`);
+      continue;
+    }
 
     try {
       const currentPage = scrapedPages.length + 1;
