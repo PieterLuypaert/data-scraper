@@ -149,11 +149,11 @@ export function AnalyticsDashboard() {
                       })}
                     </span>
                     <div className="flex items-center gap-4">
-                      <span className="text-sm text-green-600">
-                        ✓ {stats.successful}
+                      <span className="flex items-center gap-1 text-sm text-green-600">
+                        <CheckCircle className="h-4 w-4" /> {stats.successful}
                       </span>
-                      <span className="text-sm text-red-600">
-                        ✗ {stats.failed}
+                      <span className="flex items-center gap-1 text-sm text-red-600">
+                        <XCircle className="h-4 w-4" /> {stats.failed}
                       </span>
                     </div>
                   </div>

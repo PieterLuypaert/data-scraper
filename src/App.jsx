@@ -195,22 +195,40 @@ function App() {
   ];
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-gray-100 to-gray-200 p-4 md:p-8">
-      <div className="container mx-auto py-8">
-        <header className="text-center mb-8">
-          <h1 className="text-4xl md:text-5xl font-bold mb-2 text-gray-900">
-            {t("app.title")}
-          </h1>
-          <p className="text-gray-600 text-sm md:text-base max-w-2xl mx-auto">
+    <div className="relative min-h-screen bg-background">
+      {/* Ambient background */}
+      <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
+        <div className="absolute inset-0 bg-grid opacity-[0.45]" />
+        <div className="absolute -top-40 -left-32 h-96 w-96 rounded-full bg-indigo-400/20 blur-3xl" />
+        <div className="absolute -top-32 right-0 h-96 w-96 rounded-full bg-sky-400/20 blur-3xl" />
+        <div className="absolute top-1/2 left-1/3 h-96 w-96 rounded-full bg-violet-400/10 blur-3xl" />
+        <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/40 to-background" />
+      </div>
+
+      <div className="mx-auto max-w-7xl px-4 py-8 md:px-8 md:py-12">
+        <header className="mb-10 flex flex-col items-center text-center">
+          <div className="mb-5 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/70 px-4 py-1.5 text-xs font-semibold text-indigo-700 shadow-sm backdrop-blur">
+            <span className="relative flex h-2 w-2">
+              <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+              <span className="relative inline-flex h-2 w-2 rounded-full bg-indigo-500" />
+            </span>
+            Web Scraping Studio
+          </div>
+          <div className="mb-4 flex items-center justify-center">
+            <h1 className="text-4xl font-extrabold tracking-tight text-gradient-brand md:text-5xl">
+              {t("app.title")}
+            </h1>
+          </div>
+          <p className="max-w-2xl text-sm text-gray-500 md:text-base">
             {t("app.description")}
           </p>
         </header>
 
         {/* Tabs */}
-        <div className="bg-white rounded-lg shadow-lg border border-gray-200 mb-6">
-          <div 
-            className="flex border-b border-gray-200 overflow-x-auto scrollbar-hide"
-            style={{ 
+        <div className="overflow-hidden rounded-3xl border border-gray-200/80 bg-white/80 shadow-elevated backdrop-blur-xl">
+          <div
+            className="flex gap-1 overflow-x-auto scrollbar-hide border-b border-gray-100 bg-gray-50/60 p-2"
+            style={{
               scrollbarWidth: 'none',
               msOverflowStyle: 'none',
               WebkitOverflowScrolling: 'touch'
@@ -221,6 +239,7 @@ function App() {
               const label = tab.getLabel();
               const shortLabel = tab.getShortLabel();
               const tooltip = tab.getTooltip();
+              const isActive = activeTab === tab.id;
               return (
                 <Tooltip key={tab.id} content={tooltip} position="bottom">
                   <button
@@ -234,14 +253,18 @@ function App() {
                     }}
                     data-tab-id={tab.id}
                     title={label}
-                    className={`flex-shrink-0 flex items-center justify-center gap-1.5 px-2 sm:px-3 md:px-4 lg:px-5 py-3 md:py-4 font-medium transition-colors whitespace-nowrap ${
-                      activeTab === tab.id
-                        ? "text-gray-900 border-b-2 border-gray-900 bg-gray-50"
-                        : "text-gray-600 hover:text-gray-900 hover:bg-gray-50"
+                    className={`group flex flex-shrink-0 items-center justify-center gap-2 whitespace-nowrap rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 md:px-4 ${
+                      isActive
+                        ? "bg-white text-indigo-700 shadow-soft ring-1 ring-indigo-100"
+                        : "text-gray-500 hover:bg-white/70 hover:text-gray-900"
                     }`}
                   >
-                    <Icon className="h-4 w-4 md:h-5 md:w-5 flex-shrink-0" />
-                    <span className="hidden sm:inline text-xs md:text-sm lg:text-base">
+                    <Icon
+                      className={`h-4 w-4 flex-shrink-0 transition-colors md:h-[18px] md:w-[18px] ${
+                        isActive ? "text-indigo-600" : "text-gray-400 group-hover:text-gray-600"
+                      }`}
+                    />
+                    <span className="hidden text-xs sm:inline md:text-sm">
                       {isLargeScreen ? label : (shortLabel || label)}
                     </span>
                   </button>
@@ -250,7 +273,7 @@ function App() {
             })}
           </div>
 
-          <div className="p-6 md:p-8">
+          <div key={activeTab} className="animate-fade-in-up p-6 md:p-8">
             {activeTab === "scrape" && (
               <ScrapeForm
                 onScrapeSuccess={(data) => handleScrapeSuccess(data)}
@@ -334,8 +357,10 @@ function App() {
         )}
 
         {/* Footer */}
-        <footer className="mt-12 text-center text-gray-600 text-sm">
+        <footer className="mt-14 flex items-center justify-center gap-2 text-sm text-gray-400">
+          <span className="h-px w-8 bg-gray-200" />
           <p>Developed by Pieter Luypaert</p>
+          <span className="h-px w-8 bg-gray-200" />
         </footer>
       </div>
     </div>

@@ -7,7 +7,7 @@ import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
 import { crawlWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
-import { Loader2, Globe, Settings, Info } from 'lucide-react';
+import { Loader2, Globe, Settings, Info, AlertTriangle } from 'lucide-react';
 
 export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
   const [url, setUrl] = useState('');
@@ -150,13 +150,15 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                   <p className="text-xs text-gray-500 mt-1">
                     Maximum aantal pagina's om te scrapen
                     {options.maxPages > 100 && (
-                      <span className="block mt-1 text-yellow-600 font-medium">
-                        ⚠ Grote crawl: Dit kan lang duren en veel geheugen gebruiken
+                      <span className="mt-1 flex items-center gap-1.5 text-yellow-600 font-medium">
+                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                        Grote crawl: Dit kan lang duren en veel geheugen gebruiken
                       </span>
                     )}
                     {options.maxPages > 500 && (
-                      <span className="block mt-1 text-orange-600 font-medium">
-                        ⚠⚠ Zeer grote crawl: Export kan lang duren of falen bij zeer grote datasets
+                      <span className="mt-1 flex items-center gap-1.5 text-orange-600 font-medium">
+                        <AlertTriangle className="h-3.5 w-3.5 flex-shrink-0" />
+                        Zeer grote crawl: Export kan lang duren of falen bij zeer grote datasets
                       </span>
                     )}
                   </p>

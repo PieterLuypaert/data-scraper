@@ -265,7 +265,7 @@ export function SEOAnalysis({ data }) {
             <div className="flex justify-between items-center">
               <span className="text-sm">Canonical URL</span>
               <span className={seo.meta.hasCanonical ? 'text-green-600' : 'text-yellow-600'}>
-                {seo.meta.hasCanonical ? '✓' : '✗'}
+                {seo.meta.hasCanonical ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </span>
             </div>
           </CardContent>
@@ -282,14 +282,16 @@ export function SEOAnalysis({ data }) {
           <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm">Viewport Meta Tag</span>
-              <span className={seo.meta.hasViewport ? 'text-green-600' : 'text-red-600'}>
-                {seo.meta.hasViewport ? '✓ Mobile-friendly' : '✗ Niet mobile-friendly'}
+              <span className={`flex items-center gap-1.5 ${seo.meta.hasViewport ? 'text-green-600' : 'text-red-600'}`}>
+                {seo.meta.hasViewport ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                {seo.meta.hasViewport ? 'Mobile-friendly' : 'Niet mobile-friendly'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm">HTTPS</span>
-              <span className={seo.meta.usesHTTPS ? 'text-green-600' : 'text-red-600'}>
-                {seo.meta.usesHTTPS ? '✓ Veilig' : '✗ Onveilig'}
+              <span className={`flex items-center gap-1.5 ${seo.meta.usesHTTPS ? 'text-green-600' : 'text-red-600'}`}>
+                {seo.meta.usesHTTPS ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                {seo.meta.usesHTTPS ? 'Veilig' : 'Onveilig'}
               </span>
             </div>
             <div className="flex justify-between items-center">
@@ -318,20 +320,21 @@ export function SEOAnalysis({ data }) {
           <CardContent className="space-y-2">
             <div className="flex justify-between items-center">
               <span className="text-sm">Open Graph Tags</span>
-              <span className={seo.meta.hasOGTags ? 'text-green-600' : 'text-yellow-600'}>
-                {seo.meta.hasOGTags ? '✓ Compleet' : '✗ Onvolledig'}
+              <span className={`flex items-center gap-1.5 ${seo.meta.hasOGTags ? 'text-green-600' : 'text-yellow-600'}`}>
+                {seo.meta.hasOGTags ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
+                {seo.meta.hasOGTags ? 'Compleet' : 'Onvolledig'}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm">Twitter Card</span>
               <span className={seo.meta.hasTwitterCard ? 'text-green-600' : 'text-yellow-600'}>
-                {seo.meta.hasTwitterCard ? '✓' : '✗'}
+                {seo.meta.hasTwitterCard ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </span>
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm">Schema.org Data</span>
               <span className={seo.meta.hasSchema ? 'text-green-600' : 'text-yellow-600'}>
-                {seo.meta.hasSchema ? '✓' : '✗'}
+                {seo.meta.hasSchema ? <CheckCircle2 className="h-4 w-4" /> : <XCircle className="h-4 w-4" />}
               </span>
             </div>
           </CardContent>
