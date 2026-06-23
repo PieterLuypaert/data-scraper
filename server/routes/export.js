@@ -1,15 +1,48 @@
 const ExcelJS = require('exceljs');
 const PDFDocument = require('pdfkit');
 const config = require('../config');
+const { sendError } = require('../utils/errorResponse');
+
+/**
+ * Flatten the headings structure into a flat array of rows. `headings` is an
+ * object keyed by level ({ h1: [...], h2: [...] }); older/crawled shapes may
+ * already be an array. Returns [{ level, text, id, className }].
+ * @param {object|Array} headings
+ * @returns {Array<{level: string, text: string, id: string, className: string}>}
+ */
+function flattenHeadings(headings) {
+  if (!headings) return [];
+  if (Array.isArray(headings)) {
+    return headings.map(h => ({
+      level: h.level || h.tag || '',
+      text: h.text || '',
+      id: h.id || '',
+      className: h.className || h.class || '',
+    }));
+  }
+  const out = [];
+  Object.keys(headings).forEach(level => {
+    const arr = headings[level];
+    if (Array.isArray(arr)) {
+      arr.forEach(h => out.push({
+        level,
+        text: h.text || '',
+        id: h.id || '',
+        className: h.className || h.class || '',
+      }));
+    }
+  });
+  return out;
+}
 
 /**
  * Build the list of sheets (name + header + rows) for a single scraped page.
- * Mirrors the previous xlsx output exactly: same sheet names, column order
- * and "skip empty section" behaviour.
+ * Same sheet names and column order as before; "skip empty section" preserved.
  * @param {object} scrapedData
  * @returns {Array<{name: string, header: string[], rows: Array<Array>}>}
  */
 function buildSheetDescriptors(scrapedData) {
+  const headings = flattenHeadings(scrapedData.headings);
   const sheets = [];
 
   // Overview sheet (key/value)
@@ -20,11 +53,11 @@ function buildSheetDescriptors(scrapedData) {
       ['URL', scrapedData.url || ''],
       ['Title', scrapedData.title || ''],
       ['Description', scrapedData.description || ''],
-      ['Language', scrapedData.language || ''],
+      ['Language', scrapedData.lang || scrapedData.language || ''],
       ['Timestamp', scrapedData.timestamp || new Date().toISOString()],
       ['Total Links', scrapedData.links?.length || 0],
       ['Total Images', scrapedData.images?.length || 0],
-      ['Total Headings', scrapedData.headings?.length || 0],
+      ['Total Headings', headings.length],
     ],
   });
 
@@ -51,13 +84,11 @@ function buildSheetDescriptors(scrapedData) {
   }
 
   // Headings sheet
-  if (scrapedData.headings && scrapedData.headings.length > 0) {
+  if (headings.length > 0) {
     sheets.push({
       name: 'Headings',
       header: ['Level', 'Text', 'ID', 'Class'],
-      rows: scrapedData.headings.map(heading => [
-        heading.tag || '', heading.text || '', heading.id || '', heading.class || '',
-      ]),
+      rows: headings.map(h => [h.level, h.text, h.id, h.className]),
     });
   }
 
@@ -151,11 +182,7 @@ async function exportToExcel(req, res) {
     res.send(buffer);
     
   } catch (error) {
-    console.error('Error exporting to Excel:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to export to Excel');
   }
 }
 
@@ -389,7 +416,7 @@ async function exportToPDF(req, res) {
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to export PDF'
+        error: 'Failed to export PDF'
       });
     } else {
       // If headers are already sent, we can't send JSON, so log the error
@@ -435,24 +462,17 @@ async function batchExportToExcel(req, res) {
         scrape.timestamp || '',
         scrape.data?.links?.length || 0,
         scrape.data?.images?.length || 0,
-        scrape.data?.headings?.length || 0,
+        flattenHeadings(scrape.data?.headings).length,
       ]),
       usedNames
     );
 
-    // Individual scrape sheets
+    // Individual scrape sheets — full data per scrape, prefixed S{n}_
     scrapes.forEach((scrape, index) => {
       if (scrape.data) {
-        addSheet(
-          workbook,
-          `Scrape ${index + 1}`,
-          ['Property', 'Value'],
-          [
-            ['URL', scrape.url || ''],
-            ['Title', scrape.data.title || ''],
-            ['Timestamp', scrape.timestamp || ''],
-          ],
-          usedNames
+        const scrapeNumber = index + 1;
+        buildSheetDescriptors(scrape.data).forEach(s =>
+          addSheet(workbook, `S${scrapeNumber}_${s.name}`, s.header, s.rows, usedNames)
         );
       }
     });
@@ -465,11 +485,7 @@ async function batchExportToExcel(req, res) {
     res.send(buffer);
     
   } catch (error) {
-    console.error('Error batch exporting to Excel:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to batch export to Excel');
   }
 }
 
@@ -580,11 +596,7 @@ async function exportCrawlToExcel(req, res) {
     res.send(buffer);
     
   } catch (error) {
-    console.error('Error exporting crawl to Excel:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to export crawl to Excel');
   }
 }
 
@@ -769,7 +781,7 @@ async function exportCrawlToPDF(req, res) {
     if (!res.headersSent) {
       res.status(500).json({
         success: false,
-        error: error.message || 'Failed to export crawl PDF'
+        error: 'Failed to export crawl PDF'
       });
     } else {
       console.error('Cannot send error response - headers already sent');

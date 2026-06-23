@@ -1,4 +1,6 @@
 const getProxyManager = require('../utils/proxyManagerInstance');
+const { maskProxyUrl } = require('../utils/proxyManager');
+const { sendError } = require('../utils/errorResponse');
 const config = require('../config');
 
 /**
@@ -14,11 +16,7 @@ async function getProxyStats(req, res) {
       ...stats
     });
   } catch (error) {
-    console.error('Error getting proxy stats:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to get proxy stats');
   }
 }
 
@@ -34,12 +32,32 @@ async function checkProxyHealth(req, res) {
       ...result
     });
   } catch (error) {
-    console.error('Error checking proxy health:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to check proxy health');
   }
+}
+
+/**
+ * Validate a proxy config (object or URL string). Returns an error string or null.
+ */
+function validateProxyInput(proxy) {
+  if (typeof proxy === 'string') {
+    try {
+      const u = new URL(proxy);
+      if (!['http:', 'https:', 'socks4:', 'socks5:'].includes(u.protocol)) {
+        return 'Unsupported proxy protocol';
+      }
+      if (!u.hostname) return 'Proxy host is required';
+      return null;
+    } catch {
+      return 'Invalid proxy URL';
+    }
+  }
+  if (proxy && typeof proxy === 'object') {
+    if (!proxy.host) return 'Proxy host is required';
+    if (!proxy.port || Number.isNaN(Number(proxy.port))) return 'Valid proxy port is required';
+    return null;
+  }
+  return 'Invalid proxy configuration';
 }
 
 /**
@@ -49,25 +67,27 @@ async function addProxy(req, res) {
   try {
     const proxyManager = getProxyManager();
     const { proxy } = req.body;
-    
+
     if (!proxy) {
       return res.status(400).json({
         success: false,
         error: 'Proxy configuration is required'
       });
     }
-    
+
+    const validationError = validateProxyInput(proxy);
+    if (validationError) {
+      return res.status(400).json({ success: false, error: validationError });
+    }
+
     const addedProxy = proxyManager.addProxy(proxy);
+    // Never echo credentials back to the client.
     res.json({
       success: true,
-      proxy: addedProxy
+      proxy: { ...addedProxy, url: maskProxyUrl(addedProxy.url), password: undefined }
     });
   } catch (error) {
-    console.error('Error adding proxy:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to add proxy');
   }
 }
 
@@ -92,11 +112,7 @@ async function removeProxy(req, res) {
       message: 'Proxy removed successfully'
     });
   } catch (error) {
-    console.error('Error removing proxy:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to remove proxy');
   }
 }
 
@@ -112,11 +128,7 @@ async function resetProxies(req, res) {
       message: 'All proxies reset to healthy status'
     });
   } catch (error) {
-    console.error('Error resetting proxies:', error);
-    res.status(500).json({
-      success: false,
-      error: error.message
-    });
+    sendError(res, 500, error, 'Failed to reset proxies');
   }
 }
 

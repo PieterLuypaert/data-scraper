@@ -1,8 +1,9 @@
 const { scrapeWithPuppeteer } = require('../scrapers/puppeteerScraper');
 const { scrapeWithCheerio } = require('../scrapers/cheerioScraper');
-const { needsPuppeteer } = require('../utils/helpers');
+const { needsPuppeteer, mapScrapingError } = require('../utils/helpers');
 const { toAbsoluteUrl, extractAttributes } = require('../utils/helpers');
 const { assertSafeUrl } = require('../utils/ssrfGuard');
+const { sendError } = require('../utils/errorResponse');
 const config = require('../config');
 const cheerio = require('cheerio');
 
@@ -193,34 +194,7 @@ async function handleCustomSelectors(req, res) {
       data: results
     });
   } catch (error) {
-    console.error('Custom selector scraping error:', error);
-    console.error('Error stack:', error.stack);
-    
-    // Provide more detailed error messages
-    let errorMessage = 'Failed to scrape with custom selectors';
-    if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    // Check for specific error types
-    if (error.message && error.message.includes('net::ERR')) {
-      errorMessage = 'Network error: Kan niet verbinden met de website. Controleer of de URL correct is.';
-    } else if (error.message && error.message.includes('timeout')) {
-      errorMessage = 'Timeout: De website reageert niet snel genoeg. Probeer het later opnieuw.';
-    } else if (error.message && error.message.includes('Navigation failed')) {
-      errorMessage = 'Navigatie gefaald: De website kan niet worden geladen. Mogelijk wordt scraping geblokkeerd.';
-    } else if (error.message && error.message.includes('Protocol error')) {
-      errorMessage = 'Protocol error: Er is een probleem met de verbinding. Probeer het opnieuw.';
-    } else if (error.message && error.message.includes('Puppeteer error')) {
-      errorMessage = error.message; // Keep Puppeteer error as-is
-    }
-    
-    res.status(500).json({
-      success: false,
-      error: errorMessage,
-      message: error.message,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    sendError(res, 500, error, mapScrapingError(error));
   }
 }
 

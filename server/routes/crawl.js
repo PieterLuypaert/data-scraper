@@ -1,8 +1,33 @@
 const { crawlWebsite } = require('../scrapers/crawler');
 const { assertSafeUrl } = require('../utils/ssrfGuard');
+const { sendError } = require('../utils/errorResponse');
 
 // Store progress for each crawl session
 const crawlProgress = new Map();
+
+// Resource limits to prevent abuse / memory exhaustion
+const MAX_PAGES = Number(process.env.CRAWL_MAX_PAGES) || 100;
+const MAX_DEPTH = 10;
+const MAX_DELAY = 60000;
+const MAX_CONCURRENT_CRAWLS = Number(process.env.CRAWL_MAX_CONCURRENT) || 2;
+const MAX_SESSIONS = 100;
+let activeCrawls = 0;
+
+/** Clamp a numeric option into [min, max], falling back to a default. */
+function clamp(value, min, max, fallback) {
+  const n = Number(value);
+  if (!Number.isFinite(n)) return fallback;
+  return Math.min(Math.max(n, min), max);
+}
+
+/** Evict the oldest session(s) so the progress Map can never grow unbounded. */
+function pruneSessions() {
+  while (crawlProgress.size >= MAX_SESSIONS) {
+    const oldest = crawlProgress.keys().next().value;
+    if (oldest === undefined) break;
+    crawlProgress.delete(oldest);
+  }
+}
 
 /**
  * Progress endpoint for crawl progress (polling-based)
@@ -56,22 +81,32 @@ async function handleCrawl(req, res) {
     return res.status(400).json({ error: error.message });
   }
 
+  // Limit concurrent crawls to protect CPU/memory (each spawns Puppeteer).
+  if (activeCrawls >= MAX_CONCURRENT_CRAWLS) {
+    return res.status(429).json({
+      success: false,
+      error: `Too many concurrent crawls (max ${MAX_CONCURRENT_CRAWLS}). Please wait and try again.`,
+    });
+  }
+
   // Generate session ID
   const sessionId = `crawl_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-  
+
+  pruneSessions();
+
   // Initialize progress
   crawlProgress.set(sessionId, {
     current: 0,
-    total: options?.maxPages || 50,
+    total: clamp(options?.maxPages, 1, MAX_PAGES, 50),
     message: 'Starting crawl...',
     currentUrl: url
   });
 
   try {
-    // Default crawl options
+    // Default crawl options (with hard server-side caps)
     const crawlOptions = {
-      maxPages: options?.maxPages || 50,
-      maxDepth: options?.maxDepth || 3,
+      maxPages: clamp(options?.maxPages, 1, MAX_PAGES, 50),
+      maxDepth: clamp(options?.maxDepth, 1, MAX_DEPTH, 3),
       sameDomain: options?.sameDomain !== false, // Default true
       includeSubdomains: options?.includeSubdomains || false,
       excludePatterns: options?.excludePatterns || [
@@ -93,7 +128,7 @@ async function handleCrawl(req, res) {
         '.mp4',
         '.mp3'
       ],
-      delay: options?.delay || 1000, // 1 second delay between requests
+      delay: clamp(options?.delay, 0, MAX_DELAY, 1000), // ms between requests
       followExternalLinks: options?.followExternalLinks || false,
       onProgress: (current, total, message, currentUrl) => {
         const progressData = {
@@ -112,6 +147,7 @@ async function handleCrawl(req, res) {
     console.log(`Starting crawl with options:`, crawlOptions);
 
     // Start crawl in background
+    activeCrawls++;
     crawlWebsite(url, crawlOptions)
       .then(result => {
         crawlProgress.set(sessionId, {
@@ -121,23 +157,20 @@ async function handleCrawl(req, res) {
           completed: true,
           result: result
         });
-        
-        // Clean up after 30 seconds
-        setTimeout(() => {
-          crawlProgress.delete(sessionId);
-        }, 30000);
       })
       .catch(error => {
         crawlProgress.set(sessionId, {
           current: 0,
           total: crawlOptions.maxPages,
-          message: `Error: ${error.message}`,
+          message: 'Crawl failed.',
           error: true
         });
-        
-        setTimeout(() => {
-          crawlProgress.delete(sessionId);
-        }, 30000);
+        console.error(`Crawl ${sessionId} failed:`, error);
+      })
+      .finally(() => {
+        activeCrawls = Math.max(0, activeCrawls - 1);
+        // Schedule cleanup regardless of outcome so sessions never leak.
+        setTimeout(() => crawlProgress.delete(sessionId), 30000);
       });
 
     // Return immediately with session ID
@@ -149,24 +182,7 @@ async function handleCrawl(req, res) {
 
   } catch (error) {
     crawlProgress.delete(sessionId);
-    console.error('=== CRAWL ERROR ===');
-    console.error('Error message:', error.message);
-    console.error('Error name:', error.name);
-    console.error('Error stack:', error.stack);
-    console.error('===================');
-    
-    let errorMessage = 'Failed to crawl website';
-    if (error.message) {
-      errorMessage = error.message;
-    }
-    
-    res.status(500).json({ 
-      success: false,
-      error: errorMessage,
-      message: error.message,
-      name: error.name,
-      details: process.env.NODE_ENV === 'development' ? error.stack : undefined
-    });
+    sendError(res, 500, error, 'Failed to start crawl');
   }
 }
 

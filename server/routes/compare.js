@@ -1,4 +1,5 @@
 const { compareScrapedData } = require('../utils/compare');
+const { sendError } = require('../utils/errorResponse');
 
 /**
  * Compare route handler
@@ -14,8 +15,7 @@ function handleCompare(req, res) {
     const changes = compareScrapedData(oldData, newData);
     res.json({ success: true, changes });
   } catch (error) {
-    console.error('Change detection error:', error);
-    res.status(500).json({ error: 'Failed to compare data', message: error.message });
+    sendError(res, 500, error, 'Failed to compare data');
   }
 }
 

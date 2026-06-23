@@ -1,7 +1,9 @@
 const express = require("express");
 const cors = require("cors");
 const path = require("path");
+const rateLimit = require("express-rate-limit");
 const config = require("./server/config");
+const { requireApiKey } = require("./server/middleware/auth");
 const { handleScrape } = require("./server/routes/scrape");
 const { handleCustomSelectors } = require("./server/routes/custom");
 const { handleCompare } = require("./server/routes/compare");
@@ -28,12 +30,31 @@ const { generateInsights } = require("./server/routes/insights");
 
 const app = express();
 const PORT = config.PORT;
+const HOST = process.env.HOST || "127.0.0.1";
 
 // Middleware
-app.use(cors());
+// Lock CORS to the frontend origin (was wide-open). Configurable via env.
+app.use(
+  cors({
+    origin: process.env.FRONTEND_ORIGIN || "http://localhost:5173",
+    methods: ["GET", "POST"],
+    allowedHeaders: ["Content-Type", "X-API-Key"],
+  })
+);
+
+// Rate limiting + optional API-key auth on all /api routes (applied before any
+// route handler below). API_KEY env unset = auth disabled (local convenience).
+const apiLimiter = rateLimit({
+  windowMs: Number(process.env.RATE_LIMIT_WINDOW_MS) || 15 * 60 * 1000,
+  max: Number(process.env.RATE_LIMIT_MAX) || 100,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, error: "Too many requests, please try again later." },
+});
+app.use("/api", apiLimiter, requireApiKey);
 
 // Higher limit specifically for export routes (must be BEFORE default body parser)
-const exportBodyParser = express.json({ limit: "100mb" });
+const exportBodyParser = express.json({ limit: "25mb" });
 app.post("/api/export/excel", exportBodyParser, exportToExcel);
 app.post("/api/export/pdf", exportBodyParser, exportToPDF);
 app.post("/api/export/batch-excel", exportBodyParser, batchExportToExcel);
@@ -73,6 +94,12 @@ app.get("/health", (req, res) => {
   res.status(200).json({ status: "ok", message: "API is running" });
 });
 
+// JSON 404 for unknown API routes (must come before the SPA catch-all so API
+// clients never receive the HTML index page).
+app.use("/api", (req, res) => {
+  res.status(404).json({ success: false, error: "Not found" });
+});
+
 // Serve frontend (only in production, dev uses Vite)
 if (process.env.NODE_ENV === "production") {
   app.get("*", (req, res) => {
@@ -80,10 +107,19 @@ if (process.env.NODE_ENV === "production") {
   });
 }
 
+// Global error handler — catches synchronous errors and next(err), incl.
+// malformed-JSON from the body parser. Returns generic JSON, no internals.
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error("Unhandled error:", err);
+  if (res.headersSent) return;
+  res.status(err.status || 500).json({ success: false, error: "Internal server error" });
+});
+
 // Start the server with error handling for port conflicts
-const server = app.listen(PORT, () => {
-  console.log(`API server running on http://localhost:${PORT}`);
-  console.log(`API endpoints available at http://localhost:${PORT}/api`);
+const server = app.listen(PORT, HOST, () => {
+  console.log(`API server running on http://${HOST}:${PORT}`);
+  console.log(`API endpoints available at http://${HOST}:${PORT}/api`);
   console.log("For frontend, run: npm run dev:frontend");
 });
 

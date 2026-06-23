@@ -78,7 +78,15 @@ module.exports = {
     // Proxy list - can be array of objects or strings
     // Format 1: { host: 'proxy.example.com', port: 8080, username: 'user', password: 'pass', protocol: 'http' }
     // Format 2: 'http://user:pass@proxy.example.com:8080'
-    proxies: process.env.PROXIES ? JSON.parse(process.env.PROXIES) : [],
+    proxies: (() => {
+      if (!process.env.PROXIES) return [];
+      try {
+        return JSON.parse(process.env.PROXIES);
+      } catch (e) {
+        console.error('Invalid PROXIES env var — ignoring proxy config:', e.message);
+        return [];
+      }
+    })(),
     
     // Health check settings
     healthCheckInterval: 5, // minutes

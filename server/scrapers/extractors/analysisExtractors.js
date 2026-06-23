@@ -153,7 +153,7 @@ function detectContentType(title, bodyText, metaTags, prices, images) {
   const contentType = {
     isBlog: allTextLower.includes('blog') || allTextLower.includes('post') || allTextLower.includes('article'),
     isNews: allTextLower.includes('news') || allTextLower.includes('breaking') || metaTags['og:type'] === 'article',
-    isEcommerce: allTextLower.includes('shop') || allTextLower.includes('cart') || allTextLower.includes('buy') || allTextLower.includes('price') || prices.size > 0,
+    isEcommerce: allTextLower.includes('shop') || allTextLower.includes('cart') || allTextLower.includes('buy') || allTextLower.includes('price') || (Array.isArray(prices) ? prices.length > 0 : (prices?.size > 0)),
     isPortfolio: allTextLower.includes('portfolio') || allTextLower.includes('projects') || images.length > 10,
     isCorporate: allTextLower.includes('about us') || allTextLower.includes('contact') || allTextLower.includes('services')
   };

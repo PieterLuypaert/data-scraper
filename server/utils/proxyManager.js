@@ -3,6 +3,17 @@ const { HttpsProxyAgent } = require('https-proxy-agent');
 const { HttpProxyAgent } = require('http-proxy-agent');
 
 /**
+ * Mask credentials in a proxy URL for safe logging / API responses.
+ * `http://user:pass@host:port` -> `http://***@host:port`
+ * @param {string} url
+ * @returns {string}
+ */
+function maskProxyUrl(url) {
+  if (typeof url !== 'string') return url;
+  return url.replace(/:\/\/[^@/]+@/, '://***@');
+}
+
+/**
  * Proxy Manager with rotation, health monitoring, and failover
  */
 class ProxyManager {
@@ -150,7 +161,7 @@ class ProxyManager {
       
       if (proxy.consecutiveFailures >= this.maxConsecutiveFailures) {
         proxy.isHealthy = false;
-        console.warn(`Proxy ${proxy.url || proxy.host} marked as unhealthy after ${proxy.consecutiveFailures} failures`);
+        console.warn(`Proxy ${maskProxyUrl(proxy.url) || proxy.host} marked as unhealthy after ${proxy.consecutiveFailures} failures`);
       }
       
       return { healthy: false, error: error.message, responseTime };
@@ -174,7 +185,7 @@ class ProxyManager {
       healthy: healthyCount,
       unhealthy: this.proxies.length - healthyCount,
       proxies: this.proxies.map(p => ({
-        url: p.url || `${p.host}:${p.port}`,
+        url: maskProxyUrl(p.url) || `${p.host}:${p.port}`,
         isHealthy: p.isHealthy,
         consecutiveFailures: p.consecutiveFailures,
         responseTime: p.responseTime,
@@ -227,7 +238,7 @@ class ProxyManager {
     
     if (proxy.consecutiveFailures >= this.maxConsecutiveFailures) {
       proxy.isHealthy = false;
-      console.warn(`Proxy ${proxy.url || proxy.host} marked as unhealthy`);
+      console.warn(`Proxy ${maskProxyUrl(proxy.url) || proxy.host} marked as unhealthy`);
     }
   }
 
@@ -289,7 +300,7 @@ class ProxyManager {
       totalSuccessful,
       overallSuccessRate: totalRequests > 0 ? (totalSuccessful / totalRequests * 100).toFixed(2) : 0,
       proxies: this.proxies.map(p => ({
-        url: p.url || `${p.host}:${p.port}`,
+        url: maskProxyUrl(p.url) || `${p.host}:${p.port}`,
         isHealthy: p.isHealthy,
         consecutiveFailures: p.consecutiveFailures,
         responseTime: p.responseTime,
@@ -315,4 +326,5 @@ class ProxyManager {
 }
 
 module.exports = ProxyManager;
+module.exports.maskProxyUrl = maskProxyUrl;
 

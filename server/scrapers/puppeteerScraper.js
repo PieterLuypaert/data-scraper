@@ -3,6 +3,7 @@ const axios = require('axios');
 const config = require('../config');
 const getProxyManager = require('../utils/proxyManagerInstance');
 const { assertSafeUrl, safeLookup, beforeRedirect } = require('../utils/ssrfGuard');
+const { maskProxyUrl } = require('../utils/proxyManager');
 
 /**
  * Wait for specified milliseconds (compatible with all Puppeteer versions)
@@ -383,7 +384,7 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
       
       // If failover is enabled and we have more retries, try next proxy
       if (retries < maxRetries && proxyManager && config.PROXY.enabled && config.PROXY.failoverEnabled && proxyManager.proxies.length > 0) {
-        console.warn(`Request failed with proxy ${selectedProxy?.url || selectedProxy?.host}, trying next proxy...`);
+        console.warn(`Request failed with proxy ${maskProxyUrl(selectedProxy?.url) || selectedProxy?.host}, trying next proxy...`);
         selectedProxy = null; // Get next proxy
         retries++;
         continue;

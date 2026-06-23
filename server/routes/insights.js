@@ -3,6 +3,7 @@
  */
 
 const { generateAIInsights } = require('../utils/aiInsights');
+const { sendError } = require('../utils/errorResponse');
 
 /**
  * Generate AI insights for scraped data
@@ -26,12 +27,7 @@ async function generateInsights(req, res) {
       insights
     });
   } catch (error) {
-    console.error('Error generating insights:', error);
-    res.status(500).json({
-      success: false,
-      error: 'Failed to generate insights',
-      message: error.message
-    });
+    sendError(res, 500, error, 'Failed to generate insights');
   }
 }
 

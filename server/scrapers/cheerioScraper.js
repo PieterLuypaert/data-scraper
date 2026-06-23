@@ -2,6 +2,7 @@ const axios = require('axios');
 const config = require('../config');
 const getProxyManager = require('../utils/proxyManagerInstance');
 const { safeLookup, beforeRedirect } = require('../utils/ssrfGuard');
+const { maskProxyUrl } = require('../utils/proxyManager');
 
 /**
  * Scrape a URL using Axios (for simple sites)
@@ -48,7 +49,7 @@ async function scrapeWithCheerio(url, proxy = null) {
         if (agent) {
           axiosConfig.httpsAgent = agent;
           axiosConfig.httpAgent = agent;
-          console.log(`Using proxy: ${selectedProxy.url || selectedProxy.host}:${selectedProxy.port}`);
+          console.log(`Using proxy: ${maskProxyUrl(selectedProxy.url) || `${selectedProxy.host}:${selectedProxy.port}`}`);
         }
       }
       
@@ -72,7 +73,7 @@ async function scrapeWithCheerio(url, proxy = null) {
       
       // If failover is enabled and we have more retries, try next proxy
       if (retries < maxRetries && proxyManager && config.PROXY.enabled && config.PROXY.failoverEnabled && proxyManager.proxies.length > 0) {
-        console.warn(`Request failed with proxy ${selectedProxy?.url || selectedProxy?.host}, trying next proxy...`);
+        console.warn(`Request failed with proxy ${maskProxyUrl(selectedProxy?.url) || selectedProxy?.host}, trying next proxy...`);
         selectedProxy = null; // Get next proxy
         retries++;
         continue;
@@ -82,6 +83,10 @@ async function scrapeWithCheerio(url, proxy = null) {
       throw error;
     }
   }
+
+  // Safety net: the loop always returns or throws above, but guard against an
+  // implicit `undefined` return if the retry conditions are ever changed.
+  throw new Error('All scrape retries exhausted');
 }
 
 module.exports = {

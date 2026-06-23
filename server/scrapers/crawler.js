@@ -253,9 +253,10 @@ function extractLinksFromHtml(htmlContent, baseUrl, baseDomain, options = {}) {
         }
       }
 
-      // Remove fragments and query params for comparison (optional)
+      // Normalize: drop fragment and query string so the same page reached via
+      // different query params (e.g. ?utm_source=…) is only crawled once.
       const cleanUrl = urlObj.origin + urlObj.pathname;
-      links.add(absoluteUrl);
+      links.add(cleanUrl);
 
     } catch (e) {
       // Invalid URL, skip

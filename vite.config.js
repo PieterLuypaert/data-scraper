@@ -11,7 +11,7 @@ export default defineConfig({
     },
   },
   optimizeDeps: {
-    include: ['recharts', 'react-is'],
+    include: ['recharts'],
   },
   server: {
     proxy: {
