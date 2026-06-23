@@ -366,16 +366,6 @@ function App() {
           {/* Fixed-width inner shell keeps content from squishing mid-animation */}
           <div className="relative flex h-full w-72 flex-col">
             {SidebarAmbient()}
-            {/* Collapse handle on the sidebar's right edge */}
-            <button
-              onClick={() => setSidebarCollapsed(true)}
-              aria-label="Sidebar inklappen"
-              title="Sidebar inklappen"
-              tabIndex={sidebarCollapsed ? -1 : 0}
-              className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border border-r-0 border-indigo-200/60 bg-white/80 py-3 pl-1.5 pr-1 text-gray-500 shadow-soft backdrop-blur transition-colors hover:bg-indigo-50 hover:text-indigo-700"
-            >
-              <PanelLeftClose className="h-4 w-4" />
-            </button>
             <div className="relative px-6 pt-7 pb-5">
               <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
                 {t("app.title")}
@@ -391,6 +381,22 @@ function App() {
           </div>
         </aside>
 
+        {/* Desktop collapse handle — sits on the sidebar's outer right edge (only when open) */}
+        <button
+          onClick={() => setSidebarCollapsed(true)}
+          aria-label="Sidebar inklappen"
+          title="Sidebar inklappen"
+          tabIndex={sidebarCollapsed ? -1 : 0}
+          className={cn(
+            "fixed top-1/2 z-40 hidden -translate-y-1/2 rounded-r-xl border border-l-0 border-indigo-500/60 bg-indigo-600 py-8 pl-2 pr-2.5 text-white shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-700",
+            sidebarCollapsed
+              ? "left-0 opacity-0 lg:flex lg:pointer-events-none"
+              : "lg:left-72 opacity-100 lg:flex"
+          )}
+        >
+          <PanelLeftClose className="h-5 w-5" />
+        </button>
+
         {/* Desktop expand handle on the left edge (only when collapsed) */}
         <button
           onClick={() => setSidebarCollapsed(false)}
@@ -398,7 +404,7 @@ function App() {
           title="Sidebar uitklappen"
           tabIndex={sidebarCollapsed ? 0 : -1}
           className={cn(
-            "fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-lg border border-l-0 border-indigo-200/60 bg-white/70 py-3 pl-1 pr-1.5 text-gray-400 shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-50 hover:text-indigo-700",
+            "fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-xl border border-l-0 border-indigo-500/60 bg-indigo-600 py-8 pl-2 pr-2.5 text-white shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-700",
             sidebarCollapsed
               ? "translate-x-0 opacity-100 lg:flex"
               : "-translate-x-full opacity-0 lg:flex lg:pointer-events-none"
