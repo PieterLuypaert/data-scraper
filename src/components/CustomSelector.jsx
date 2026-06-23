@@ -377,8 +377,8 @@ export function CustomSelector({ onScrapeSuccess }) {
         </CardHeader>
         <CardContent className="pt-0 space-y-4">
           <HelpText type="tip" title="Wat zijn CSS selectors?">
-            CSS selectors zijn patronen om elementen op een pagina te vinden. Bijvoorbeeld: <code className="bg-gray-100 px-1 rounded text-xs">.product-title</code> voor elementen met class "product-title", 
-            of <code className="bg-gray-100 px-1 rounded text-xs">h1</code> voor alle H1 headings. Gebruik de templates hieronder of voer je eigen selector in.
+            CSS selectors zijn patronen om elementen op een pagina te vinden. Bijvoorbeeld: <code>.product-title</code> voor elementen met class &quot;product-title&quot;, 
+            of <code>h1</code> voor alle H1 headings. Gebruik de templates hieronder of voer je eigen selector in.
           </HelpText>
           
           {selectors.length === 0 ? (

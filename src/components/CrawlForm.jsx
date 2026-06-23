@@ -66,7 +66,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
       <Card>
       <CardContent className="p-6">
         <div className="space-y-4">
-          <HelpText type="tip" title="Tip">
+          <HelpText type="tip" title="Begin met een kleine crawl">
             Start met een klein aantal pagina's (10-20) om te testen. Verhoog daarna naar meer pagina's als nodig. 
             Grote crawls kunnen lang duren en veel geheugen gebruiken.
           </HelpText>
