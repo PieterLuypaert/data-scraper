@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
@@ -25,6 +25,10 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
     followExternalLinks: false
   });
 
+  // Track the in-flight crawl so we can stop polling if the component unmounts.
+  const pendingCrawl = useRef(null);
+  useEffect(() => () => pendingCrawl.current?.cancel?.(), []);
+
   const handleSubmit = async (e) => {
     e.preventDefault();
     setError('');
@@ -37,8 +41,10 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
 
     setLoading(true);
     try {
-      const data = await crawlWebsite(validation.normalizedUrl, options);
-      
+      const crawl = crawlWebsite(validation.normalizedUrl, options);
+      pendingCrawl.current = crawl;
+      const data = await crawl;
+
       onCrawlSuccess(data);
       setUrl('');
     } catch (err) {
@@ -47,6 +53,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
       setError(errorMessage);
       onCrawlError?.(errorMessage);
     } finally {
+      pendingCrawl.current = null;
       setLoading(false);
     }
   };

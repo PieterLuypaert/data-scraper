@@ -159,33 +159,55 @@ export async function crawlWebsite(url, options = {}) {
 
     const sessionId = startData.sessionId;
 
-    // Poll for result
-    return new Promise((resolve, reject) => {
-      const resultInterval = setInterval(async () => {
+    // Poll for result. The returned promise carries a `.cancel()` so callers
+    // can stop polling on unmount / tab-switch (prevents a leaking interval and
+    // setState on an unmounted component).
+    let resultInterval;
+    let timeoutId;
+    let settled = false;
+    const stop = () => {
+      clearInterval(resultInterval);
+      clearTimeout(timeoutId);
+    };
+
+    const promise = new Promise((resolve, reject) => {
+      resultInterval = setInterval(async () => {
         try {
           const resultResponse = await fetch(`${API_BASE_URL}/crawl/result?sessionId=${sessionId}`);
           const resultData = await resultResponse.json();
 
           if (resultData.success && resultData.data) {
-            clearInterval(resultInterval);
+            settled = true;
+            stop();
             resolve(resultData.data);
           } else if (resultData.error) {
-            clearInterval(resultInterval);
+            settled = true;
+            stop();
             reject(new Error(resultData.error));
           }
           // Otherwise, still in progress, continue polling
         } catch (error) {
-          clearInterval(resultInterval);
+          settled = true;
+          stop();
           reject(error);
         }
       }, 2000); // Poll result every 2 seconds
 
       // Timeout after 10 minutes
-      setTimeout(() => {
-        clearInterval(resultInterval);
+      timeoutId = setTimeout(() => {
+        settled = true;
+        stop();
         reject(new Error('Crawl timeout: Operation took too long'));
       }, 600000);
     });
+
+    // Allow the caller to abort polling; resolves to null when cancelled.
+    promise.cancel = () => {
+      if (settled) return;
+      settled = true;
+      stop();
+    };
+    return promise;
   } catch (error) {
     console.error('Crawling error:', error);
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {

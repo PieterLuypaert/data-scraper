@@ -211,8 +211,9 @@ function extractLinksFromHtml(htmlContent, baseUrl, baseDomain, options = {}) {
   const links = new Set();
 
   $('a[href]').each((i, elem) => {
+    let href;
     try {
-      const href = $(elem).attr('href');
+      href = $(elem).attr('href');
       if (!href) return;
 
       // Skip javascript:, mailto:, tel:, etc.

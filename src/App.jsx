@@ -324,7 +324,7 @@ function App() {
         <aside
           className={`sticky top-0 hidden h-screen w-72 flex-shrink-0 border-r lg:flex ${sidebarPanelClass}`}
         >
-          <SidebarAmbient />
+          {SidebarAmbient()}
           <div className="relative px-6 pt-7 pb-5">
             <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-3 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">
               <span className="relative flex h-1.5 w-1.5">
@@ -341,9 +341,9 @@ function App() {
             </p>
           </div>
           <div className="relative flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
-            <SidebarNav />
+            {SidebarNav()}
           </div>
-          <SidebarFooter />
+          {SidebarFooter()}
         </aside>
 
         {/* Mobile slide-over sidebar */}
@@ -356,7 +356,7 @@ function App() {
             <aside
               className={`absolute left-0 top-0 flex h-full w-72 max-w-[85%] flex-col shadow-elevated animate-fade-in-up ${sidebarPanelClass}`}
             >
-              <SidebarAmbient />
+              {SidebarAmbient()}
               <div className="relative flex items-center justify-between px-6 pt-6 pb-4">
                 <div className="min-w-0">
                   <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700">
@@ -378,9 +378,9 @@ function App() {
                 </button>
               </div>
               <div className="relative flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
-                <SidebarNav />
+                {SidebarNav()}
               </div>
-              <SidebarFooter />
+              {SidebarFooter()}
             </aside>
           </div>
         )}
@@ -412,7 +412,7 @@ function App() {
                   <ScrapeForm
                     onScrapeSuccess={(data) => handleScrapeSuccess(data)}
                   />
-                  {!scrapedData && <CapabilitiesGrid />}
+                  {!scrapedData && CapabilitiesGrid()}
                 </div>
               </div>
             )}

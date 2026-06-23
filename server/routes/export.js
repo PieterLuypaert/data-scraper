@@ -115,7 +115,7 @@ function buildSheetDescriptors(scrapedData) {
  * @returns {string}
  */
 function makeUniqueSheetName(rawName, usedNames) {
-  let base = String(rawName).replace(/[*?:\\/\[\]]/g, '_').trim() || 'Sheet';
+  let base = String(rawName).replace(/[*?:\\/[\]]/g, '_').trim() || 'Sheet';
   base = base.substring(0, 31);
   let name = base;
   let i = 2;
@@ -801,6 +801,10 @@ module.exports = {
   exportToPDF,
   batchExportToExcel,
   exportCrawlToExcel,
-  exportCrawlToPDF
+  exportCrawlToPDF,
+  // Exported for unit testing
+  buildSheetDescriptors,
+  flattenHeadings,
+  makeUniqueSheetName
 };
 

@@ -2,8 +2,10 @@ import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Tooltip, InfoBadge } from './ui/tooltip';
+import { Alert, AlertDescription } from './ui/alert';
 import { Copy, Check, Download, FileJson, FileSpreadsheet, FileText as FileTextIcon, FileDown, Globe, Mail, Phone, Link as LinkIcon, Image, Video, FileText, Code, BarChart3, TrendingUp, Languages, ShoppingCart, Rss, MapPin, Camera, Maximize2, X, Search } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
+import { highlightSafe } from '@/lib/utils';
 import { exportToJSON, exportToCSV, exportToExcel, exportToPDF } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
 
@@ -108,11 +110,7 @@ export function ScrapeResultsExtended({ data, crawlData }) {
     return String(text || '').toLowerCase().includes(query);
   };
 
-  const highlightText = (text) => {
-    if (!searchQuery || !text) return String(text || '');
-    const regex = new RegExp(`(${searchQuery})`, 'gi');
-    return String(text).replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-  };
+  const highlightText = (text) => highlightSafe(text, searchQuery);
 
   const handleCopy = async () => {
     try {
@@ -1055,8 +1053,8 @@ export function ScrapeResultsExtended({ data, crawlData }) {
               {data.videos.map((video, i) => (
                 <div key={i} className="p-3 bg-gray-50 rounded border border-gray-200">
                   <div className="space-y-1 text-sm">
-                    {video.src && <div><strong>Src:</strong> <a href={video.src} target="_blank" className="text-gray-900 hover:underline break-all">{video.src}</a></div>}
-                    {video.poster && <div><strong>Poster:</strong> <a href={video.poster} target="_blank" className="text-gray-900 hover:underline break-all">{video.poster}</a></div>}
+                    {video.src && <div><strong>Src:</strong> <a href={video.src} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:underline break-all">{video.src}</a></div>}
+                    {video.poster && <div><strong>Poster:</strong> <a href={video.poster} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:underline break-all">{video.poster}</a></div>}
                     {video.width && <div><strong>Width:</strong> {video.width}</div>}
                     {video.height && <div><strong>Height:</strong> {video.height}</div>}
                   </div>
@@ -1105,7 +1103,7 @@ export function ScrapeResultsExtended({ data, crawlData }) {
               {data.scripts.map((script, i) => (
                 <div key={i} className="p-2 bg-gray-50 rounded border border-gray-200">
                   {script.src ? (
-                    <div><strong>External:</strong> <a href={script.src} target="_blank" className="text-gray-900 hover:underline break-all">{script.src}</a></div>
+                    <div><strong>External:</strong> <a href={script.src} target="_blank" rel="noopener noreferrer" className="text-gray-900 hover:underline break-all">{script.src}</a></div>
                   ) : (
                     <div><strong>Inline:</strong> {script.contentLength} characters</div>
                   )}

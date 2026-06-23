@@ -130,8 +130,7 @@ function extractAllData(htmlContent, finalUrl) {
     allIds: Array.from(allIds),
     comments,
     favicons,
-    elementCounts,
-    
+
     // Text content
     bodyText: bodyText.substring(0, 10000),
     fullText: fullText.substring(0, 10000),

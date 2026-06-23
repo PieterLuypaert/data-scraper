@@ -3,6 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/
 import { Button } from './ui/button';
 import { Copy, Check, Download, FileJson, FileSpreadsheet } from 'lucide-react';
 import { copyToClipboard } from '@/utils/clipboard';
+import { highlightSafe } from '@/lib/utils';
 import { exportToJSON, exportToCSV, exportLinksToCSV, exportImagesToCSV } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
 
@@ -174,11 +175,7 @@ export function ScrapeResults({ data }) {
     }
   };
 
-  const highlightText = (text) => {
-    if (!searchQuery || !text) return text;
-    const regex = new RegExp(`(${searchQuery})`, 'gi');
-    return text.replace(regex, '<mark class="bg-yellow-200">$1</mark>');
-  };
+  const highlightText = (text) => highlightSafe(text, searchQuery);
 
   return (
     <div className="w-full max-w-6xl mx-auto space-y-6 mt-8">

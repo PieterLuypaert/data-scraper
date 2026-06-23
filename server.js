@@ -109,7 +109,6 @@ if (process.env.NODE_ENV === "production") {
 
 // Global error handler — catches synchronous errors and next(err), incl.
 // malformed-JSON from the body parser. Returns generic JSON, no internals.
-// eslint-disable-next-line no-unused-vars
 app.use((err, req, res, next) => {
   console.error("Unhandled error:", err);
   if (res.headersSent) return;
