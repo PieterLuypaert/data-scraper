@@ -1,7 +1,8 @@
 {
   "app": {
     "title": "Web Scraper",
-    "description": "Scrape websites, extract data, analyze content and export to Excel/PDF. Choose a tab below to get started."
+    "description": "Scrape websites, extract data, analyze content and export to Excel/PDF. Choose a tab below to get started.",
+    "discoverMore": "Or discover what else you can do"
   },
   "tabs": {
     "scrape": "Scrape",

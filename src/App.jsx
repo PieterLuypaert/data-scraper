@@ -30,6 +30,7 @@ import {
   Languages,
   Menu,
   X,
+  ArrowRight,
 } from "lucide-react";
 
 function App() {
@@ -188,6 +189,56 @@ function App() {
     setSidebarOpen(false);
   };
 
+  // Capabilities shown on the landing (scrape) page so it's visually clear
+  // what each part of the app does.
+  const featureIds = [
+    "crawl",
+    "custom",
+    "bulk",
+    "seo",
+    "visualization",
+    "insights",
+  ];
+
+  const CapabilitiesGrid = () => (
+    <div className="mx-auto mt-8 w-full max-w-5xl md:mt-10">
+      <div className="mb-4 flex items-center gap-3">
+        <span className="h-px flex-1 bg-gradient-to-r from-transparent to-indigo-200" />
+        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
+          {t("app.discoverMore")}
+        </span>
+        <span className="h-px flex-1 bg-gradient-to-l from-transparent to-indigo-200" />
+      </div>
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
+        {featureIds.map((id) => {
+          const tab = tabById(id);
+          if (!tab) return null;
+          const Icon = tab.icon;
+          return (
+            <button
+              key={id}
+              onClick={() => selectTab(id)}
+              className="group flex items-start gap-3 rounded-xl border border-gray-200/80 bg-white/70 p-3.5 text-left shadow-soft backdrop-blur transition-all duration-150 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-elevated"
+            >
+              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
+                <Icon className="h-[18px] w-[18px]" />
+              </span>
+              <div className="min-w-0">
+                <div className="flex items-center gap-1 text-sm font-bold text-gray-900">
+                  <span className="truncate">{tab.getLabel()}</span>
+                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 -translate-x-1 text-indigo-500 opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100" />
+                </div>
+                <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-gray-500">
+                  {tab.getTooltip()}
+                </p>
+              </div>
+            </button>
+          );
+        })}
+      </div>
+    </div>
+  );
+
   const sidebarPanelClass =
     "relative flex flex-col overflow-hidden border-indigo-200/40 bg-white/55 backdrop-blur-2xl";
 
@@ -258,7 +309,7 @@ function App() {
   );
 
   return (
-    <div className="relative min-h-screen bg-background">
+    <div className="relative h-screen overflow-hidden bg-background">
       {/* Ambient background */}
       <div className="pointer-events-none fixed inset-0 -z-10 overflow-hidden">
         <div className="absolute inset-0 bg-grid opacity-[0.45]" />
@@ -268,7 +319,7 @@ function App() {
         <div className="absolute inset-0 bg-gradient-to-b from-background/0 via-background/40 to-background" />
       </div>
 
-      <div className="flex min-h-screen">
+      <div className="flex h-screen">
         {/* Sidebar (desktop) */}
         <aside
           className={`sticky top-0 hidden h-screen w-72 flex-shrink-0 border-r lg:flex ${sidebarPanelClass}`}
@@ -335,7 +386,7 @@ function App() {
         )}
 
         {/* Main content */}
-        <div className="flex min-w-0 flex-1 flex-col">
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col">
           {/* Top bar */}
           <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-indigo-200/40 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8 lg:hidden">
             <button
@@ -347,13 +398,22 @@ function App() {
             </button>
           </div>
 
-          <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 py-6 md:px-8 md:py-8">
+          <main
+            className={`mx-auto flex w-full max-w-[1600px] min-h-0 flex-1 flex-col px-4 md:px-8 ${
+              activeTab === "scrape" && !scrapedData
+                ? "overflow-hidden py-4 md:py-6"
+                : "overflow-y-auto pretty-scroll py-6 md:py-8"
+            }`}
+          >
             <div key={activeTab} className="animate-fade-in-up flex flex-1 flex-col">
             {activeTab === "scrape" && (
-              <div className="flex w-full flex-1 items-center justify-center">
-                <ScrapeForm
-                  onScrapeSuccess={(data) => handleScrapeSuccess(data)}
-                />
+              <div className="flex w-full flex-1 flex-col">
+                <div className="flex w-full flex-1 flex-col items-center justify-center">
+                  <ScrapeForm
+                    onScrapeSuccess={(data) => handleScrapeSuccess(data)}
+                  />
+                  {!scrapedData && <CapabilitiesGrid />}
+                </div>
               </div>
             )}
             {activeTab === "crawl" && (
