@@ -11,6 +11,8 @@ import {
 } from '@/utils/storage';
 import { batchExport } from '@/utils/export';
 import { Trash2, Download, X, CheckSquare, Square, Camera, History } from 'lucide-react';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function HistoryManager({ onSelectHistoryItem }) {
   const [history, setHistory] = useState([]);
@@ -93,89 +95,75 @@ export function HistoryManager({ onSelectHistoryItem }) {
     });
   };
 
+  const headerActions = (
+    <>
+      {selectedItems.length > 0 && (
+        <>
+          <Tooltip content="Exporteer geselecteerde items naar JSON">
+            <Button variant="outline" onClick={() => handleExport('json')} size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export JSON
+            </Button>
+          </Tooltip>
+          <Tooltip content="Exporteer geselecteerde items naar CSV">
+            <Button variant="outline" onClick={() => handleExport('csv')} size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export CSV
+            </Button>
+          </Tooltip>
+          <Tooltip content="Exporteer geselecteerde items naar Excel">
+            <Button variant="outline" onClick={() => handleExport('excel')} size="sm">
+              <Download className="mr-2 h-4 w-4" />
+              Export Excel
+            </Button>
+          </Tooltip>
+          <Tooltip content={`Verwijder ${selectedItems.length} geselecteerde item(s)`}>
+            <Button variant="outline" onClick={handleBulkDelete} size="sm">
+              <Trash2 className="mr-2 h-4 w-4" />
+              Verwijder ({selectedItems.length})
+            </Button>
+          </Tooltip>
+        </>
+      )}
+      <Tooltip content="Verwijder alle geschiedenis (kan niet ongedaan worden gemaakt)">
+        <Button variant="outline" onClick={handleClearAll} size="sm">
+          <Trash2 className="mr-2 h-4 w-4" />
+          Wis Alles
+        </Button>
+      </Tooltip>
+    </>
+  );
+
   if (history.length === 0) {
     return (
-      <div className="space-y-4">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Geschiedenis</h2>
-          <p className="text-gray-600 mt-1">
-            Bekijk je eerdere scrapes hier
-          </p>
-        </div>
+      <PageShell size="wide">
+        <PageHeader
+          title={t('tabs.history')}
+          description={t('tooltips.history')}
+        />
         <EmptyState
           icon={History}
           title="Nog geen geschiedenis"
           description="Je scraped websites worden hier automatisch opgeslagen. Start met scrapen via de 'Scrapen' of 'Crawlen' tab om geschiedenis op te bouwen."
         />
-      </div>
+      </PageShell>
     );
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-3xl font-bold text-gray-900">Geschiedenis</h2>
-          <p className="text-gray-600 mt-1">
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.history')}
+        description={
+          <>
             {history.length} item(s) opgeslagen
             <InfoBadge tooltip="Alle gescrapede websites worden automatisch opgeslagen. Klik op een item om de details te bekijken." />
-          </p>
-        </div>
-        <div className="flex gap-2">
-          {selectedItems.length > 0 && (
-            <>
-              <Tooltip content="Exporteer geselecteerde items naar JSON">
-                <Button
-                  variant="outline"
-                  onClick={() => handleExport('json')}
-                  size="sm"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export JSON
-                </Button>
-              </Tooltip>
-              <Tooltip content="Exporteer geselecteerde items naar CSV">
-                <Button
-                  variant="outline"
-                  onClick={() => handleExport('csv')}
-                  size="sm"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export CSV
-                </Button>
-              </Tooltip>
-              <Tooltip content="Exporteer geselecteerde items naar Excel">
-                <Button
-                  variant="outline"
-                  onClick={() => handleExport('excel')}
-                  size="sm"
-                >
-                  <Download className="mr-2 h-4 w-4" />
-                  Export Excel
-                </Button>
-              </Tooltip>
-              <Tooltip content={`Verwijder ${selectedItems.length} geselecteerde item(s)`}>
-                <Button
-                  variant="outline"
-                  onClick={handleBulkDelete}
-                  size="sm"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Verwijder ({selectedItems.length})
-                </Button>
-              </Tooltip>
-            </>
-          )}
-          <Tooltip content="Verwijder alle geschiedenis (kan niet ongedaan worden gemaakt)">
-            <Button variant="outline" onClick={handleClearAll} size="sm">
-              <Trash2 className="mr-2 h-4 w-4" />
-              Wis Alles
-            </Button>
-          </Tooltip>
-        </div>
-      </div>
+          </>
+        }
+        actions={headerActions}
+      />
 
-      <div className="flex items-center gap-2 p-3 bg-gray-50 rounded border border-gray-200">
+      <div className="flex items-center gap-2 rounded-xl border border-indigo-200/40 bg-indigo-50/30 p-3">
         <Tooltip content={selectedItems.length === history.length ? "Deselecteer alle items" : "Selecteer alle items"}>
           <Button
             variant="ghost"
@@ -203,8 +191,8 @@ export function HistoryManager({ onSelectHistoryItem }) {
             key={item.id}
             className={`cursor-pointer transition-all ${
               selectedItems.includes(item.id)
-                ? 'border-gray-900 bg-gray-50'
-                : 'border-gray-200'
+                ? 'border-indigo-400 bg-indigo-50/60 ring-1 ring-indigo-200'
+                : 'border-indigo-200/40'
             }`}
             onClick={() => onSelectHistoryItem?.(item)}
           >
@@ -264,7 +252,7 @@ export function HistoryManager({ onSelectHistoryItem }) {
           </Card>
         ))}
       </div>
-    </div>
+    </PageShell>
   );
 }
 

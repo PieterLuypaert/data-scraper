@@ -2,6 +2,8 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { getAnalytics, getMostScrapedWebsites, getSuccessRate } from '@/utils/storage';
 import { BarChart3, TrendingUp, CheckCircle, XCircle, Globe } from 'lucide-react';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function AnalyticsDashboard() {
   const [analytics, setAnalytics] = useState(null);
@@ -31,8 +33,8 @@ export function AnalyticsDashboard() {
       title: 'Totaal Scrapes',
       value: analytics.totalScrapes,
       icon: BarChart3,
-      color: 'text-gray-900',
-      bgColor: 'bg-gray-100',
+      color: 'text-indigo-600',
+      bgColor: 'bg-indigo-100',
     },
     {
       title: 'Succesvol',
@@ -58,13 +60,13 @@ export function AnalyticsDashboard() {
   ];
 
   return (
-    <div className="space-y-6">
-      <div>
-        <h2 className="text-3xl font-bold text-gray-900 mb-2">Analytics Dashboard</h2>
-        <p className="text-gray-600">Overzicht van je scraping activiteit</p>
-      </div>
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.analytics')}
+        description={t('tooltips.analytics')}
+      />
 
-      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-4">
         {stats.map((stat, index) => (
           <Card key={index}>
             <CardContent className="p-6">
@@ -84,6 +86,7 @@ export function AnalyticsDashboard() {
         ))}
       </div>
 
+      <div className="mt-6 space-y-6">
       {mostScraped.length > 0 && (
         <Card>
           <CardHeader>
@@ -98,20 +101,20 @@ export function AnalyticsDashboard() {
               {mostScraped.map((site, index) => (
                 <div
                   key={index}
-                  className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
+                  className="flex items-center justify-between rounded-xl border border-indigo-200/40 bg-indigo-50/30 p-3"
                 >
-                  <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-gray-900 truncate">
+                  <div className="min-w-0 flex-1">
+                    <p className="truncate text-sm font-medium text-gray-900">
                       {site.url}
                     </p>
                   </div>
                   <div className="ml-4 flex items-center gap-2">
-                    <span className="text-sm font-semibold text-gray-600">
+                    <span className="text-sm font-semibold text-indigo-600">
                       {site.count}x
                     </span>
-                    <div className="w-24 bg-gray-200 rounded-full h-2">
+                    <div className="h-2 w-24 overflow-hidden rounded-full bg-indigo-100">
                       <div
-                        className="bg-gray-900 h-2 rounded-full"
+                        className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600"
                         style={{
                           width: `${(site.count / mostScraped[0].count) * 100}%`,
                         }}
@@ -139,7 +142,7 @@ export function AnalyticsDashboard() {
                 .map(([date, stats]) => (
                   <div
                     key={date}
-                    className="flex items-center justify-between p-3 bg-gray-50 rounded border border-gray-200"
+                    className="flex items-center justify-between rounded-xl border border-indigo-200/40 bg-indigo-50/30 p-3"
                   >
                     <span className="text-sm font-medium text-gray-900">
                       {new Date(date).toLocaleDateString('nl-NL', {
@@ -162,7 +165,8 @@ export function AnalyticsDashboard() {
           </CardContent>
         </Card>
       )}
-    </div>
+      </div>
+    </PageShell>
   );
 }
 

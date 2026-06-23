@@ -1,15 +1,20 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { CheckCircle2, XCircle, AlertTriangle, TrendingUp, Smartphone, Globe, FileText, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function SEOAnalysis({ data }) {
   if (!data || !data.seoAnalysis) {
     return (
-      <Card>
-        <CardContent className="p-6 text-center text-gray-600">
-          Geen SEO data beschikbaar. Scrape eerst een website.
-        </CardContent>
-      </Card>
+      <PageShell size="wide">
+        <PageHeader title={t('tabs.seo')} description={t('tooltips.seo')} />
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">
+            Geen SEO data beschikbaar. Scrape eerst een website.
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
@@ -29,7 +34,9 @@ export function SEOAnalysis({ data }) {
   };
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4">
+    <PageShell size="wide">
+      <PageHeader title={t('tabs.seo')} description={t('tooltips.seo')} />
+    <div className="space-y-4">
       {/* SEO Score */}
       <Card>
         <CardHeader>
@@ -341,6 +348,7 @@ export function SEOAnalysis({ data }) {
         </Card>
       </div>
     </div>
+    </PageShell>
   );
 }
 

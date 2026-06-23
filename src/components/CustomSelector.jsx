@@ -7,6 +7,8 @@ import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
 import { Plus, Trash2, Play, CheckCircle, XCircle, Loader2, Code, FileText, DollarSign, ShoppingBag, Image as ImageIcon, Link as LinkIcon } from 'lucide-react';
 import { validateUrl } from '@/utils/validation';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 const SELECTOR_TEMPLATES = [
   {
@@ -305,6 +307,11 @@ export function CustomSelector({ onScrapeSuccess }) {
   };
 
   return (
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.custom')}
+        description={t('tooltips.custom')}
+      />
     <div className="space-y-6">
       {/* URL Input */}
       <Card>
@@ -338,7 +345,7 @@ export function CustomSelector({ onScrapeSuccess }) {
               <button
                 key={i}
                 onClick={() => addTemplate(template)}
-                className="p-3 bg-gray-50 hover:bg-gray-100 rounded border border-gray-200 text-left transition-colors"
+                className="rounded-xl border border-indigo-200/40 bg-indigo-50/30 p-3 text-left transition-all hover:border-indigo-300 hover:bg-indigo-50/60 hover:shadow-sm"
               >
                 <div className="font-medium text-sm text-gray-900 mb-1">{template.name}</div>
                 <div className="text-xs text-gray-600 line-clamp-2">{template.description}</div>
@@ -611,6 +618,7 @@ export function CustomSelector({ onScrapeSuccess }) {
         </Card>
       )}
     </div>
+    </PageShell>
   );
 }
 

@@ -1,8 +1,9 @@
 import { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
 import { BarChart3, TrendingUp, Link as LinkIcon, FileText } from 'lucide-react';
 import { getAnalytics } from '@/utils/storage';
+import { PageShell, PageHeader, PageTabs } from './ui/page-shell';
+import { t } from '@/i18n';
 
 // Import recharts components
 import {
@@ -126,45 +127,22 @@ export function DataVisualization({ scrapedData }) {
     }
   }, [scrapedData]);
 
-  const COLORS = ['#3b82f6', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6', '#ec4899'];
+  const COLORS = ['#6366f1', '#8b5cf6', '#0ea5e9', '#ef4444', '#10b981', '#ec4899'];
+
+  const viewTabs = [
+    { id: 'statistics', label: 'Statistieken', icon: BarChart3 },
+    { id: 'wordcloud', label: 'Word Cloud', icon: FileText },
+    { id: 'links', label: 'Link Graph', icon: LinkIcon },
+    { id: 'analytics', label: 'Analytics', icon: TrendingUp },
+  ];
 
   return (
-    <div className="w-full max-w-7xl mx-auto space-y-4">
-      {/* View Selector */}
-      <div className="flex gap-2 border-b border-gray-200">
-        <Button
-          variant={selectedView === 'statistics' ? 'default' : 'ghost'}
-          onClick={() => setSelectedView('statistics')}
-          className="rounded-none"
-        >
-          <BarChart3 className="h-4 w-4 mr-2" />
-          Statistieken
-        </Button>
-        <Button
-          variant={selectedView === 'wordcloud' ? 'default' : 'ghost'}
-          onClick={() => setSelectedView('wordcloud')}
-          className="rounded-none"
-        >
-          <FileText className="h-4 w-4 mr-2" />
-          Word Cloud
-        </Button>
-        <Button
-          variant={selectedView === 'links' ? 'default' : 'ghost'}
-          onClick={() => setSelectedView('links')}
-          className="rounded-none"
-        >
-          <LinkIcon className="h-4 w-4 mr-2" />
-          Link Graph
-        </Button>
-        <Button
-          variant={selectedView === 'analytics' ? 'default' : 'ghost'}
-          onClick={() => setSelectedView('analytics')}
-          className="rounded-none"
-        >
-          <TrendingUp className="h-4 w-4 mr-2" />
-          Analytics
-        </Button>
-      </div>
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.visualization')}
+        description={t('tooltips.visualization')}
+      />
+      <PageTabs tabs={viewTabs} active={selectedView} onChange={setSelectedView} />
 
       {/* Statistics Chart */}
       {selectedView === 'statistics' && (
@@ -183,7 +161,7 @@ export function DataVisualization({ scrapedData }) {
                       <XAxis dataKey="name" />
                       <YAxis />
                       <Tooltip />
-                      <Bar dataKey="value" fill="#3b82f6" />
+                      <Bar dataKey="value" fill="#6366f1" />
                     </BarChart>
                   </ResponsiveContainer>
                 </CardContent>
@@ -243,7 +221,7 @@ export function DataVisualization({ scrapedData }) {
           </CardHeader>
           <CardContent>
             {wordCloudData.length > 0 ? (
-              <div className="flex flex-wrap gap-2 p-4 bg-gray-50 rounded-lg min-h-[400px] items-center justify-center">
+              <div className="flex min-h-[400px] flex-wrap items-center justify-center gap-2 rounded-xl border border-indigo-200/40 bg-indigo-50/20 p-4">
                 {wordCloudData.map((item, index) => {
                   const size = Math.max(12, Math.min(48, item.value * 2));
                   const opacity = Math.max(0.5, Math.min(1, item.value / 10));
@@ -289,9 +267,9 @@ export function DataVisualization({ scrapedData }) {
                     <XAxis dataKey="name" angle={-45} textAnchor="end" height={100} />
                     <YAxis />
                     <Tooltip />
-                    <Bar dataKey="value" fill="#3b82f6">
+                    <Bar dataKey="value" fill="#6366f1">
                       {linkGraphData.nodes.slice(0, 10).map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.isInternal ? '#10b981' : '#3b82f6'} />
+                        <Cell key={`cell-${index}`} fill={entry.isInternal ? '#10b981' : '#6366f1'} />
                       ))}
                     </Bar>
                   </BarChart>
@@ -308,7 +286,7 @@ export function DataVisualization({ scrapedData }) {
                 </div>
                 <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mt-4">
                   {linkGraphData.nodes.slice(0, 8).map((node, index) => (
-                    <div key={index} className="p-3 bg-gray-50 rounded border border-gray-200">
+                    <div key={index} className="rounded-xl border border-indigo-200/40 bg-indigo-50/30 p-3">
                       <div className="text-xs text-gray-600 truncate">{node.name}</div>
                       <div className="text-lg font-bold text-gray-900">{node.value} links</div>
                       <div className={`text-xs ${node.isInternal ? 'text-green-600' : 'text-blue-600'}`}>
@@ -355,7 +333,7 @@ export function DataVisualization({ scrapedData }) {
           </CardContent>
         </Card>
       )}
-    </div>
+    </PageShell>
   );
 }
 

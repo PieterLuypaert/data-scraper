@@ -1,9 +1,8 @@
 import { useState, useEffect } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
-import { Button } from './ui/button';
-import { Tooltip } from './ui/tooltip';
-import { Languages, Check, Globe } from 'lucide-react';
+import { Card, CardContent } from './ui/card';
+import { Check, Globe } from 'lucide-react';
 import { getLanguage, setLanguage, getAvailableLanguages, t } from '../i18n';
+import { PageShell, PageHeader } from './ui/page-shell';
 
 export function LanguageSettings() {
   const [currentLang, setCurrentLang] = useState(getLanguage());
@@ -30,45 +29,41 @@ export function LanguageSettings() {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Languages className="h-5 w-5" />
-          {t('tabs.settings')}
-        </CardTitle>
-        <CardDescription>
-          {t('common.selectLanguage')}
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
-        <div className="space-y-2">
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.settings')}
+        description={t('common.selectLanguage')}
+      />
+      <Card>
+      <CardContent className="p-6">
+        <div className="grid grid-cols-1 gap-2 md:grid-cols-2">
           {languages.map((lang) => (
             <button
               key={lang.code}
               onClick={() => handleLanguageChange(lang.code)}
               disabled={isChanging}
-              className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${
+              className={`flex w-full cursor-pointer items-center justify-between rounded-xl border-2 p-3 transition-all ${
                 currentLang === lang.code
-                  ? 'border-gray-900 bg-gray-50'
-                  : 'border-gray-200 hover:border-gray-300 hover:bg-gray-50'
-              } ${isChanging ? 'opacity-50 cursor-not-allowed' : 'cursor-pointer'}`}
+                  ? 'border-indigo-500 bg-indigo-50/60 ring-1 ring-indigo-200'
+                  : 'border-indigo-200/40 hover:border-indigo-300 hover:bg-indigo-50/40'
+              } ${isChanging ? 'cursor-not-allowed opacity-50' : ''}`}
             >
               <div className="flex items-center gap-3">
                 <span className="text-2xl">{lang.flag}</span>
-                <span className="font-medium">{lang.name}</span>
+                <span className="font-semibold text-gray-900">{lang.name}</span>
               </div>
               {currentLang === lang.code && (
-                <Check className="h-5 w-5 text-gray-900" />
+                <Check className="h-5 w-5 text-indigo-600" />
               )}
             </button>
           ))}
         </div>
-        <div className="mt-6 p-4 bg-blue-50 rounded-lg">
+        <div className="mt-6 rounded-xl border border-indigo-200/40 bg-gradient-to-br from-indigo-50 to-sky-50 p-4">
           <div className="flex items-start gap-2">
-            <Globe className="h-5 w-5 text-blue-600 mt-0.5" />
-            <div className="text-sm text-blue-800">
-              <p className="font-medium mb-1">Language Settings</p>
-              <p className="text-blue-700">
+            <Globe className="mt-0.5 h-5 w-5 text-indigo-600" />
+            <div className="text-sm text-indigo-900/80">
+              <p className="mb-1 font-semibold text-indigo-900">Language Settings</p>
+              <p>
                 Changing the language will update the UI immediately. Your preference is saved in your browser.
               </p>
             </div>
@@ -76,6 +71,7 @@ export function LanguageSettings() {
         </div>
       </CardContent>
     </Card>
+    </PageShell>
   );
 }
 

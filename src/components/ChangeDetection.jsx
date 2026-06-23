@@ -5,6 +5,8 @@ import { Alert, AlertDescription } from './ui/alert';
 import { Plus, Minus, Edit, CheckCircle, XCircle } from 'lucide-react';
 import { compareScrapes, getChangeSummary } from '@/utils/changeDetection';
 import { getHistory } from '@/utils/storage';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function ChangeDetection() {
   const [oldScrapeId, setOldScrapeId] = useState('');
@@ -40,20 +42,28 @@ export function ChangeDetection() {
 
   if (!history || history.length < 2) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle>Change Detection</CardTitle>
-        </CardHeader>
-        <CardContent>
-          <p className="text-gray-600">Je hebt minimaal 2 scrapes nodig om te vergelijken.</p>
-        </CardContent>
-      </Card>
+      <PageShell>
+        <PageHeader
+          title={t('tabs.changes')}
+          description={t('tooltips.changes')}
+        />
+        <Card>
+          <CardContent className="p-6 text-center text-gray-500">
+            Je hebt minimaal 2 scrapes nodig om te vergelijken.
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
   const summary = changes ? getChangeSummary(changes) : null;
 
   return (
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.changes')}
+        description={t('tooltips.changes')}
+      />
     <div className="space-y-6">
       <Card>
         <CardHeader>
@@ -67,7 +77,7 @@ export function ChangeDetection() {
               <select
                 value={oldScrapeId}
                 onChange={(e) => setOldScrapeId(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/15"
               >
                 <option value="">Selecteer scrape...</option>
                 {history.map(scrape => (
@@ -82,7 +92,7 @@ export function ChangeDetection() {
               <select
                 value={newScrapeId}
                 onChange={(e) => setNewScrapeId(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 bg-white text-gray-900"
+                className="w-full rounded-xl border border-gray-300 bg-white px-3 py-2 text-gray-900 focus:border-indigo-500 focus:outline-none focus:ring-4 focus:ring-indigo-500/15"
               >
                 <option value="">Selecteer scrape...</option>
                 {history.map(scrape => (
@@ -267,6 +277,7 @@ export function ChangeDetection() {
         </>
       )}
     </div>
+    </PageShell>
   );
 }
 

@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Alert, AlertDescription } from './ui/alert';
 import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
@@ -9,6 +9,8 @@ import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { Loader2, Plus, X, CheckCircle2, XCircle } from 'lucide-react';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function BulkScrapeForm({ onScrapeComplete }) {
   const [urls, setUrls] = useState(['']);
@@ -102,15 +104,13 @@ export function BulkScrapeForm({ onScrapeComplete }) {
   };
 
   return (
-    <Card>
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          Bulk Scraping
-          <InfoBadge tooltip="Scrape meerdere websites tegelijk. Handig voor het vergelijken van verschillende pagina's of het verzamelen van data van meerdere sites." />
-        </CardTitle>
-        <CardDescription>Scrape meerdere URLs tegelijk</CardDescription>
-      </CardHeader>
-      <CardContent className="space-y-4">
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.bulk')}
+        description={t('tooltips.bulk')}
+      />
+      <Card>
+      <CardContent className="space-y-4 p-6">
         <HelpText type="info" title="Hoe werkt bulk scraping?">
           Voeg meerdere URLs toe en scrape ze allemaal tegelijk. Elke URL wordt onafhankelijk gescraped. 
           Resultaten worden automatisch opgeslagen in de geschiedenis.
@@ -182,9 +182,9 @@ export function BulkScrapeForm({ onScrapeComplete }) {
         </div>
 
         {loading && (
-          <div className="w-full bg-gray-200 rounded-full h-2">
+          <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-100">
             <div
-              className="bg-gray-900 h-2 rounded-full transition-all duration-300"
+              className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600 transition-all duration-300"
               style={{ width: `${(progress.current / progress.total) * 100}%` }}
             />
           </div>
@@ -221,6 +221,7 @@ export function BulkScrapeForm({ onScrapeComplete }) {
         )}
       </CardContent>
     </Card>
+    </PageShell>
   );
 }
 

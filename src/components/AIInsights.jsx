@@ -8,6 +8,7 @@ import {
 } from "./ui/card";
 import { Button } from "./ui/button";
 import { Tooltip } from "./ui/tooltip";
+import { PageShell, PageHeader } from "./ui/page-shell";
 import {
   Brain,
   Sparkles,
@@ -51,74 +52,64 @@ export function AIInsights({ data }) {
 
   if (!data) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            {t("insights.title")}
-          </CardTitle>
-          <CardDescription>{t("insights.noData")}</CardDescription>
-        </CardHeader>
-      </Card>
+      <PageShell size="wide">
+        <PageHeader title={t("insights.title")} description={t("tooltips.insights")} />
+        <Card>
+          <CardContent className="p-8 text-center text-gray-500">
+            {t("insights.noData")}
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
   if (loading) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            {t("insights.title")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin text-gray-400" />
-            <span className="ml-3 text-gray-600">
-              {t("insights.generating")}
-            </span>
-          </div>
-        </CardContent>
-      </Card>
+      <PageShell size="wide">
+        <PageHeader title={t("insights.title")} description={t("tooltips.insights")} />
+        <Card>
+          <CardContent>
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="h-8 w-8 animate-spin text-indigo-400" />
+              <span className="ml-3 text-gray-600">
+                {t("insights.generating")}
+              </span>
+            </div>
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
   if (error) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            {t("insights.title")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="flex items-center gap-2 text-red-600">
-            <AlertCircle className="h-5 w-5" />
-            <span>{error}</span>
-          </div>
-        </CardContent>
-      </Card>
+      <PageShell size="wide">
+        <PageHeader title={t("insights.title")} description={t("tooltips.insights")} />
+        <Card>
+          <CardContent>
+            <div className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              <span>{error}</span>
+            </div>
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
   if (!insights) {
     return (
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Brain className="h-5 w-5" />
-            {t("insights.title")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Button onClick={generateInsights} className="w-full">
-            <Sparkles className="h-4 w-4 mr-2" />
-            Generate Insights
-          </Button>
-        </CardContent>
-      </Card>
+      <PageShell size="wide">
+        <PageHeader title={t("insights.title")} description={t("tooltips.insights")} />
+        <Card>
+          <CardContent className="p-6">
+            <Button onClick={generateInsights} className="w-full">
+              <Sparkles className="mr-2 h-4 w-4" />
+              Generate Insights
+            </Button>
+          </CardContent>
+        </Card>
+      </PageShell>
     );
   }
 
@@ -135,6 +126,8 @@ export function AIInsights({ data }) {
   };
 
   return (
+    <PageShell size="wide">
+      <PageHeader title={t("insights.title")} description={t("tooltips.insights")} />
     <div className="space-y-6">
       {/* Summary */}
       {insights.summary && (
@@ -172,9 +165,9 @@ export function AIInsights({ data }) {
                     {t("insights.confidence")}
                   </span>
                 </div>
-                <div className="w-full bg-gray-200 rounded-full h-2">
+                <div className="h-2 w-full overflow-hidden rounded-full bg-indigo-100">
                   <div
-                    className="bg-gray-900 h-2 rounded-full"
+                    className="h-2 rounded-full bg-gradient-to-r from-indigo-600 to-violet-600"
                     style={{
                       width: `${insights.categories.primaryConfidence}%`,
                     }}
@@ -220,7 +213,7 @@ export function AIInsights({ data }) {
               {insights.topics.map((topic, index) => (
                 <div
                   key={index}
-                  className="px-3 py-1 bg-gray-100 rounded-full text-sm flex items-center gap-2"
+                  className="flex items-center gap-2 rounded-full bg-indigo-50 px-3 py-1 text-sm text-indigo-700"
                 >
                   <span>{topic.name}</span>
                   <span className="text-xs text-gray-500">
@@ -322,5 +315,6 @@ export function AIInsights({ data }) {
           </Card>
         )}
     </div>
+    </PageShell>
   );
 }

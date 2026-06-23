@@ -22,6 +22,8 @@ import {
   Clock,
   TrendingUp,
 } from 'lucide-react';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function ProxyManager() {
   const [stats, setStats] = useState(null);
@@ -146,45 +148,36 @@ export function ProxyManager() {
 
   if (loading && !stats) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <RefreshCw className="h-6 w-6 animate-spin text-gray-500" />
-      </div>
+      <PageShell size="wide">
+        <PageHeader title={t('tabs.proxy')} description={t('tooltips.proxy')} />
+        <div className="flex items-center justify-center p-12">
+          <RefreshCw className="h-6 w-6 animate-spin text-indigo-500" />
+        </div>
+      </PageShell>
     );
   }
 
-  return (
-    <div className="space-y-6">
-      {/* Header */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Proxy Management</h2>
-          <p className="text-gray-600 mt-1">
-            Beheer proxies voor anti-bot bypass met rotatie en automatische failover
-          </p>
-        </div>
-        <div className="flex gap-2 flex-wrap">
-          <Button
-            variant="outline"
-            onClick={handleCheckHealth}
-            disabled={loading}
-            className="flex-shrink-0"
-          >
-            <Activity className="h-4 w-4 mr-2" />
-            Health Check
-          </Button>
-          <Button
-            variant="outline"
-            onClick={loadStats}
-            disabled={loading}
-            className="flex-shrink-0"
-          >
-            <RefreshCw className={`h-4 w-4 mr-2 ${loading ? 'animate-spin' : ''}`} />
-            Vernieuwen
-          </Button>
-        </div>
-      </div>
+  const headerActions = (
+    <>
+      <Button variant="outline" onClick={handleCheckHealth} disabled={loading} className="flex-shrink-0">
+        <Activity className="mr-2 h-4 w-4" />
+        Health Check
+      </Button>
+      <Button variant="outline" onClick={loadStats} disabled={loading} className="flex-shrink-0">
+        <RefreshCw className={`mr-2 h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+        Vernieuwen
+      </Button>
+    </>
+  );
 
-      {/* Alerts */}
+  return (
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.proxy')}
+        description={t('tooltips.proxy')}
+        actions={headerActions}
+      />
+    <div className="space-y-6">
       {error && (
         <Alert variant="destructive">
           <AlertCircle className="h-4 w-4" />
@@ -491,7 +484,7 @@ export function ProxyManager() {
       {stats && (!stats.proxies || stats.proxies.length === 0) && (
         <Card>
           <CardContent className="py-12 text-center">
-            <Server className="h-16 w-16 mx-auto mb-4 text-gray-300" />
+            <Server className="mx-auto mb-4 h-16 w-16 text-indigo-200" />
             <h3 className="text-lg font-semibold text-gray-700 mb-2">
               Geen proxies geconfigureerd
             </h3>
@@ -510,6 +503,7 @@ export function ProxyManager() {
         </Card>
       )}
     </div>
+    </PageShell>
   );
 }
 

@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
+import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
@@ -7,7 +7,9 @@ import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
 import { crawlWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
-import { Loader2, Globe, Settings, Info, AlertTriangle } from 'lucide-react';
+import { Loader2, Settings, Info, AlertTriangle } from 'lucide-react';
+import { PageShell, PageHeader } from './ui/page-shell';
+import { t } from '@/i18n';
 
 export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
   const [url, setUrl] = useState('');
@@ -56,18 +58,13 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
   };
 
   return (
-    <Card className="w-full max-w-4xl mx-auto">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <Globe className="h-5 w-5" />
-          Crawl Website (Alle Pagina's)
-          <InfoBadge tooltip="Crawlt automatisch door een hele website door links te volgen. Ideaal voor het scrapen van meerdere pagina's tegelijk." />
-        </CardTitle>
-        <CardDescription>
-          Scrape alle pagina's van een website door automatisch links te volgen
-        </CardDescription>
-      </CardHeader>
-      <CardContent>
+    <PageShell size="wide">
+      <PageHeader
+        title={t('tabs.crawl')}
+        description={t('tooltips.crawl')}
+      />
+      <Card>
+      <CardContent className="p-6">
         <div className="space-y-4">
           <HelpText type="tip" title="Tip">
             Start met een klein aantal pagina's (10-20) om te testen. Verhoog daarna naar meer pagina's als nodig. 
@@ -123,7 +120,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
 
           {/* Advanced Options */}
           {showOptions && (
-            <div className="p-4 bg-gray-50 rounded-lg space-y-4 border border-gray-200">
+            <div className="space-y-4 rounded-xl border border-indigo-200/40 bg-indigo-50/30 p-4">
               <div className="flex items-start gap-2 text-sm text-gray-600">
                 <Info className="h-4 w-4 mt-0.5 flex-shrink-0" />
                 <p>
@@ -248,6 +245,7 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
         </div>
       </CardContent>
     </Card>
+    </PageShell>
   );
 }
 

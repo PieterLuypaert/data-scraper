@@ -2,6 +2,8 @@ import { useState } from "react";
 import { Info, HelpCircle, Lightbulb, ChevronDown } from "lucide-react";
 import { Card, CardContent } from "./card";
 
+import { Button } from "./button";
+
 export function HelpText({
   children,
   type = "info",
@@ -99,18 +101,13 @@ export function EmptyState({
   actionLabel 
 }) {
   return (
-    <Card className="border-dashed">
+    <Card className="border-dashed border-indigo-200/60 bg-indigo-50/20">
       <CardContent className="flex flex-col items-center justify-center py-12 text-center">
-        {Icon && <Icon className="h-12 w-12 text-gray-400 mb-4" />}
-        <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
-        <p className="text-sm text-gray-600 max-w-md mb-4">{description}</p>
+        {Icon && <Icon className="mb-4 h-12 w-12 text-indigo-300" />}
+        <h3 className="mb-2 text-lg font-bold text-gray-900">{title}</h3>
+        <p className="mb-4 max-w-md text-sm text-gray-500">{description}</p>
         {action && actionLabel && (
-          <button
-            onClick={action}
-            className="px-4 py-2 text-sm font-medium text-white bg-gray-900 rounded-md hover:bg-gray-800 transition-colors"
-          >
-            {actionLabel}
-          </button>
+          <Button onClick={action}>{actionLabel}</Button>
         )}
       </CardContent>
     </Card>

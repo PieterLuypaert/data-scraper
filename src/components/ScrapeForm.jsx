@@ -6,6 +6,7 @@ import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
 import { Loader2, Camera, HelpCircle, ChevronDown, Globe, ArrowRight } from 'lucide-react';
+import { PageShell, PageHeader } from './ui/page-shell';
 
 export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   const [url, setUrl] = useState('');
@@ -53,13 +54,14 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-4 text-center">
-      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
-        Start met <span className="text-gradient-brand">scrapen</span>
-      </h1>
-      <p className="mt-3 max-w-xl text-sm text-gray-500 md:text-base">
-        Plak een URL en haal in één klik links, afbeeldingen, tekst, meta tags en meer op.
-      </p>
+    <PageShell size="narrow" centered>
+      <PageHeader
+        align="center"
+        title="Start met"
+        highlight="scrapen"
+        description="Plak een URL en haal in één klik links, afbeeldingen, tekst, meta tags en meer op."
+        className="mb-0"
+      />
 
       {/* URL bar */}
       <form onSubmit={handleSubmit} className="mt-8 w-full max-w-2xl">
@@ -148,7 +150,7 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
           </div>
         )}
       </form>
-    </div>
+    </PageShell>
   );
 }
 
