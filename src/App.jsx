@@ -1,40 +1,8 @@
 import { useState, useEffect } from "react";
-import { ScrapeForm } from "./components/ScrapeForm";
-import { ScrapeResults } from "./components/ScrapeResults";
 import { ScrapeResultsExtended } from "./components/ScrapeResultsExtended";
-import { BulkScrapeForm } from "./components/BulkScrapeForm";
-import { AnalyticsDashboard } from "./components/AnalyticsDashboard";
-import { HistoryManager } from "./components/HistoryManager";
-import { ChangeDetection } from "./components/ChangeDetection";
-import { CustomSelector } from "./components/CustomSelector";
-import { CrawlForm } from "./components/CrawlForm";
-import { SEOAnalysis } from "./components/SEOAnalysis";
-import { DataVisualization } from "./components/DataVisualization";
-import { ProxyManager } from "./components/ProxyManager";
-import { AIInsights } from "./components/AIInsights";
-import { LanguageSettings } from "./components/LanguageSettings";
-import { t } from "./i18n";
-import { cn } from "@/lib/utils";
-import {
-  Globe,
-  BarChart3,
-  History,
-  FileDown,
-  GitCompare,
-  Code,
-  Network,
-  Search,
-  TrendingUp,
-  Server,
-  Brain,
-  Languages,
-  Menu,
-  X,
-  ArrowRight,
-  PanelLeftClose,
-  PanelLeftOpen,
-  ChevronDown,
-} from "lucide-react";
+import { Sidebar } from "./components/layout/Sidebar";
+import { ContentRouter } from "./components/layout/ContentRouter";
+import { Menu } from "lucide-react";
 
 function App() {
   const [scrapedData, setScrapedData] = useState(null);
@@ -106,241 +74,12 @@ function App() {
     }, 100);
   };
 
-  // Define tabs with translations (will update when language changes)
-  const tabs = [
-    { 
-      id: "scrape", 
-      getLabel: () => t("tabs.scrape"), 
-      getShortLabel: () => t("tabs.scrape"), 
-      icon: Globe,
-      getTooltip: () => t("tooltips.scrape")
-    },
-    { 
-      id: "crawl", 
-      getLabel: () => t("tabs.crawl"), 
-      getShortLabel: () => t("tabs.crawl"), 
-      icon: Network,
-      getTooltip: () => t("tooltips.crawl")
-    },
-    { 
-      id: "custom", 
-      getLabel: () => t("tabs.custom"), 
-      getShortLabel: () => t("tabs.custom"), 
-      icon: Code,
-      getTooltip: () => t("tooltips.custom")
-    },
-    { 
-      id: "bulk", 
-      getLabel: () => t("tabs.bulk"), 
-      getShortLabel: () => t("tabs.bulk"), 
-      icon: FileDown,
-      getTooltip: () => t("tooltips.bulk")
-    },
-    { 
-      id: "history", 
-      getLabel: () => t("tabs.history"), 
-      getShortLabel: () => t("tabs.history"), 
-      icon: History,
-      getTooltip: () => t("tooltips.history")
-    },
-    { 
-      id: "changes", 
-      getLabel: () => t("tabs.changes"), 
-      getShortLabel: () => t("tabs.changes"), 
-      icon: GitCompare,
-      getTooltip: () => t("tooltips.changes")
-    },
-    { 
-      id: "seo", 
-      getLabel: () => t("tabs.seo"), 
-      getShortLabel: () => t("tabs.seo"), 
-      icon: Search,
-      getTooltip: () => t("tooltips.seo")
-    },
-    { 
-      id: "visualization", 
-      getLabel: () => t("tabs.visualization"), 
-      getShortLabel: () => t("tabs.visualization"), 
-      icon: TrendingUp,
-      getTooltip: () => t("tooltips.visualization")
-    },
-    { 
-      id: "insights", 
-      getLabel: () => t("tabs.insights"), 
-      getShortLabel: () => t("tabs.insights"), 
-      icon: Brain,
-      getTooltip: () => t("tooltips.insights")
-    },
-    { 
-      id: "analytics", 
-      getLabel: () => t("tabs.analytics"), 
-      getShortLabel: () => t("tabs.analytics"), 
-      icon: BarChart3,
-      getTooltip: () => t("tooltips.analytics")
-    },
-    { 
-      id: "proxy", 
-      getLabel: () => t("tabs.proxy"), 
-      getShortLabel: () => t("tabs.proxy"), 
-      icon: Server,
-      getTooltip: () => t("tooltips.proxy")
-    },
-    { 
-      id: "settings", 
-      getLabel: () => t("tabs.settings"), 
-      getShortLabel: () => t("tabs.settings"), 
-      icon: Languages,
-      getTooltip: () => t("tooltips.settings")
-    },
-  ];
-
-  const navGroups = [
-    { key: "collect", ids: ["scrape", "crawl", "custom", "bulk"] },
-    { key: "analyze", ids: ["seo", "visualization", "insights", "analytics"] },
-    { key: "manage", ids: ["history", "changes", "proxy", "settings"] },
-  ];
-  const tabById = (id) => tabs.find((tt) => tt.id === id);
   const selectTab = (id) => {
     setActiveTab(id);
     setSidebarOpen(false);
   };
   const toggleGroup = (key) =>
     setExpandedGroups((prev) => ({ ...prev, [key]: !prev[key] }));
-
-  // Capabilities shown on the landing (scrape) page so it's visually clear
-  // what each part of the app does.
-  const featureIds = [
-    "crawl",
-    "custom",
-    "bulk",
-    "seo",
-    "visualization",
-    "insights",
-  ];
-
-  const CapabilitiesGrid = () => (
-    <div className="mx-auto mt-8 w-full max-w-5xl md:mt-10">
-      <div className="mb-4 flex items-center gap-3">
-        <span className="h-px flex-1 bg-gradient-to-r from-transparent to-indigo-200" />
-        <span className="text-[11px] font-bold uppercase tracking-wider text-gray-400">
-          {t("app.discoverMore")}
-        </span>
-        <span className="h-px flex-1 bg-gradient-to-l from-transparent to-indigo-200" />
-      </div>
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        {featureIds.map((id) => {
-          const tab = tabById(id);
-          if (!tab) return null;
-          const Icon = tab.icon;
-          return (
-            <button
-              key={id}
-              onClick={() => selectTab(id)}
-              className="group flex items-start gap-3 rounded-xl border border-gray-200/80 bg-white/70 p-3.5 text-left shadow-soft backdrop-blur transition-all duration-150 hover:-translate-y-0.5 hover:border-indigo-300 hover:shadow-elevated"
-            >
-              <span className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-lg bg-indigo-50 text-indigo-600 transition-colors group-hover:bg-indigo-600 group-hover:text-white">
-                <Icon className="h-[18px] w-[18px]" />
-              </span>
-              <div className="min-w-0">
-                <div className="flex items-center gap-1 text-sm font-bold text-gray-900">
-                  <span className="truncate">{tab.getLabel()}</span>
-                  <ArrowRight className="h-3.5 w-3.5 flex-shrink-0 -translate-x-1 text-indigo-500 opacity-0 transition-all duration-150 group-hover:translate-x-0 group-hover:opacity-100" />
-                </div>
-                <p className="mt-0.5 line-clamp-2 text-xs leading-relaxed text-gray-500">
-                  {tab.getTooltip()}
-                </p>
-              </div>
-            </button>
-          );
-        })}
-      </div>
-    </div>
-  );
-
-  const sidebarPanelClass =
-    "relative flex flex-col overflow-hidden border-indigo-200/40 bg-white/55 backdrop-blur-2xl";
-
-  const SidebarAmbient = () => (
-    <div className="pointer-events-none absolute inset-0 -z-0">
-      <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-indigo-400/20 blur-3xl" />
-      <div className="absolute -bottom-12 -right-8 h-36 w-36 rounded-full bg-violet-400/15 blur-3xl" />
-      <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/30 via-transparent to-violet-50/20" />
-    </div>
-  );
-
-  const SidebarFooter = () => (
-    <div className="relative border-t border-indigo-200/40 bg-white/25 px-6 py-4 text-xs text-gray-400">
-      <p className="truncate">Developed by Pieter Luypaert</p>
-    </div>
-  );
-
-  const SidebarNav = () => (
-    <nav className="flex flex-col gap-3">
-      {navGroups.map((group) => {
-        const isOpen = expandedGroups[group.key];
-        return (
-        <div key={group.key}>
-          <button
-            type="button"
-            onClick={() => toggleGroup(group.key)}
-            aria-expanded={isOpen}
-            className="mb-1 flex w-full items-center justify-between rounded-lg px-3 py-1.5 text-[11px] font-bold uppercase tracking-wider text-indigo-400/90 transition-colors hover:bg-white/40 hover:text-indigo-600"
-          >
-            <span>{t(`tabGroups.${group.key}`)}</span>
-            <ChevronDown
-              className={cn(
-                "h-3.5 w-3.5 transition-transform duration-200",
-                isOpen ? "rotate-0" : "-rotate-90"
-              )}
-            />
-          </button>
-          {isOpen && (
-          <div className="flex flex-col gap-1">
-            {group.ids.map((id) => {
-              const tab = tabById(id);
-              if (!tab) return null;
-              const Icon = tab.icon;
-              const isActive = activeTab === id;
-              return (
-                <button
-                  key={id}
-                  onClick={() => selectTab(id)}
-                  aria-current={isActive ? "page" : undefined}
-                  className={cn(
-                    "group relative flex w-full items-center gap-3 rounded-xl px-2.5 py-2.5 text-sm font-semibold transition-all duration-200",
-                    isActive
-                      ? "bg-white/95 text-indigo-800 shadow-soft ring-1 ring-indigo-200/80"
-                      : "text-gray-600 hover:bg-white/55 hover:text-indigo-700 hover:shadow-sm hover:ring-1 hover:ring-indigo-100/70"
-                  )}
-                >
-                  <span
-                    className={cn(
-                      "flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-all duration-200",
-                      isActive
-                        ? "bg-indigo-600 text-white shadow-sm"
-                        : "bg-gray-100/80 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600"
-                    )}
-                  >
-                    <Icon
-                      className={cn(
-                        "h-[17px] w-[17px]",
-                        isActive ? "text-white" : "text-current"
-                      )}
-                    />
-                  </span>
-                  <span className={cn("truncate", isActive && "font-bold")}>
-                    {tab.getLabel()}
-                  </span>
-                </button>
-              );
-            })}
-          </div>
-          )}
-        </div>
-        );
-      })}
-    </nav>
-  );
 
   return (
     <div className="relative h-screen overflow-hidden bg-background">
@@ -354,96 +93,16 @@ function App() {
       </div>
 
       <div className="flex h-screen">
-        {/* Sidebar (desktop) — animate width so it glides instead of snapping */}
-        <aside
-          aria-hidden={sidebarCollapsed}
-          className={cn(
-            "sticky top-0 hidden h-screen flex-shrink-0 overflow-hidden border-indigo-200/40 bg-white/55 backdrop-blur-2xl",
-            "transition-[width] duration-300 ease-in-out motion-reduce:transition-none lg:block",
-            sidebarCollapsed ? "lg:w-0 border-r-0" : "lg:w-72 border-r"
-          )}
-        >
-          {/* Fixed-width inner shell keeps content from squishing mid-animation */}
-          <div className="relative flex h-full w-72 flex-col">
-            {SidebarAmbient()}
-            <div className="relative px-6 pt-7 pb-5">
-              <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
-                {t("app.title")}
-              </h1>
-              <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-gray-500">
-                {t("app.description")}
-              </p>
-            </div>
-            <div className="relative flex-1 overflow-y-auto scrollbar-none px-3 pb-6">
-              {SidebarNav()}
-            </div>
-            {SidebarFooter()}
-          </div>
-        </aside>
-
-        {/* Desktop collapse handle — sits on the sidebar's outer right edge (only when open) */}
-        <button
-          onClick={() => setSidebarCollapsed(true)}
-          aria-label="Sidebar inklappen"
-          title="Sidebar inklappen"
-          tabIndex={sidebarCollapsed ? -1 : 0}
-          className={cn(
-            "fixed top-1/2 z-40 hidden -translate-y-1/2 rounded-r-xl border border-l-0 border-indigo-500/60 bg-indigo-600 py-8 pl-2 pr-2.5 text-white shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-700",
-            sidebarCollapsed
-              ? "left-0 opacity-0 lg:flex lg:pointer-events-none"
-              : "lg:left-72 opacity-100 lg:flex"
-          )}
-        >
-          <PanelLeftClose className="h-5 w-5" />
-        </button>
-
-        {/* Desktop expand handle on the left edge (only when collapsed) */}
-        <button
-          onClick={() => setSidebarCollapsed(false)}
-          aria-label="Sidebar uitklappen"
-          title="Sidebar uitklappen"
-          tabIndex={sidebarCollapsed ? 0 : -1}
-          className={cn(
-            "fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-xl border border-l-0 border-indigo-500/60 bg-indigo-600 py-8 pl-2 pr-2.5 text-white shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-700",
-            sidebarCollapsed
-              ? "translate-x-0 opacity-100 lg:flex"
-              : "-translate-x-full opacity-0 lg:flex lg:pointer-events-none"
-          )}
-        >
-          <PanelLeftOpen className="h-4 w-4" />
-        </button>
-
-        {/* Mobile slide-over sidebar */}
-        {sidebarOpen && (
-          <div className="fixed inset-0 z-50 lg:hidden">
-            <div
-              className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
-              onClick={() => setSidebarOpen(false)}
-            />
-            <aside
-              className={`absolute left-0 top-0 flex h-full w-72 max-w-[85%] flex-col shadow-elevated animate-fade-in-up ${sidebarPanelClass}`}
-            >
-              {SidebarAmbient()}
-              <div className="relative flex items-center justify-between px-6 pt-6 pb-4">
-                <div className="min-w-0">
-                  <h1 className="truncate text-xl font-extrabold tracking-tight text-gradient-brand">
-                    {t("app.title")}
-                  </h1>
-                </div>
-                <button
-                  onClick={() => setSidebarOpen(false)}
-                  className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-white/70 hover:text-indigo-700"
-                >
-                  <X className="h-5 w-5" />
-                </button>
-              </div>
-              <div className="relative flex-1 overflow-y-auto scrollbar-none px-3 pb-6">
-                {SidebarNav()}
-              </div>
-              {SidebarFooter()}
-            </aside>
-          </div>
-        )}
+        <Sidebar
+          activeTab={activeTab}
+          onSelectTab={selectTab}
+          expandedGroups={expandedGroups}
+          onToggleGroup={toggleGroup}
+          sidebarCollapsed={sidebarCollapsed}
+          setSidebarCollapsed={setSidebarCollapsed}
+          sidebarOpen={sidebarOpen}
+          setSidebarOpen={setSidebarOpen}
+        />
 
         {/* Main content */}
         <div className="flex min-h-0 min-w-0 flex-1 flex-col">
@@ -465,85 +124,15 @@ function App() {
                 : "overflow-y-auto pretty-scroll py-6 md:py-8"
             }`}
           >
-            <div key={activeTab} className="animate-fade-in-up flex flex-1 flex-col">
-            {activeTab === "scrape" && (
-              <div className="flex w-full flex-1 flex-col">
-                <div className="flex w-full flex-1 flex-col items-center justify-center">
-                  <ScrapeForm
-                    onScrapeSuccess={(data) => handleScrapeSuccess(data)}
-                  />
-                  {!scrapedData && CapabilitiesGrid()}
-                </div>
-              </div>
-            )}
-            {activeTab === "crawl" && (
-              <CrawlForm
-                onCrawlSuccess={(data) => {
-                  // Store full crawl data with all pages for export
-                  setCrawlData(data);
-                  // Show summary or first page for display
-                  if (data.pages && data.pages.length > 0) {
-                    // Merge crawl summary statistics into first page data for display
-                    const firstPage = { ...data.pages[0] };
-                    if (data.summary) {
-                      // Use crawl summary statistics (totals across all pages)
-                      firstPage.statistics = {
-                        ...firstPage.statistics,
-                        // Override with crawl summary totals
-                        totalLinks: data.summary.totalLinks || 0,
-                        totalImages: data.summary.totalImages || 0,
-                        totalHeadings: data.summary.totalHeadings || 0,
-                        totalParagraphs: data.summary.totalParagraphs || 0,
-                        totalTables: data.summary.totalTables || 0,
-                        totalForms: data.summary.totalForms || 0,
-                        totalButtons: data.summary.totalButtons || 0,
-                        totalVideos: data.summary.totalVideos || 0,
-                        totalScripts: data.summary.totalScripts || 0,
-                        totalStylesheets: data.summary.totalStylesheets || 0,
-                        // Keep other statistics from first page if not in summary
-                        totalAudios: firstPage.statistics?.totalAudios || 0,
-                        totalIframes: firstPage.statistics?.totalIframes || 0,
-                        totalSVGs: firstPage.statistics?.totalSVGs || 0,
-                        totalCanvases: firstPage.statistics?.totalCanvases || 0,
-                        totalDataAttributes: firstPage.statistics?.totalDataAttributes || 0,
-                        totalComments: firstPage.statistics?.totalComments || 0,
-                      };
-                      // Add crawl info
-                      firstPage.crawlInfo = {
-                        totalPages: data.totalPages,
-                        startUrl: data.startUrl,
-                      };
-                    }
-                    handleScrapeSuccess(firstPage);
-                  } else {
-                    handleScrapeSuccess(data);
-                  }
-                }}
-              />
-            )}
-            {activeTab === "custom" && (
-              <CustomSelector
-                onScrapeSuccess={(data, url) => {
-                  handleScrapeSuccess(data, url);
-                }}
-              />
-            )}
-            {activeTab === "bulk" && (
-              <BulkScrapeForm onScrapeComplete={handleBulkComplete} />
-            )}
-            {activeTab === "history" && (
-              <HistoryManager onSelectHistoryItem={handleSelectHistoryItem} />
-            )}
-            {activeTab === "changes" && <ChangeDetection />}
-            {activeTab === "seo" && <SEOAnalysis data={scrapedData} />}
-            {activeTab === "visualization" && (
-              <DataVisualization scrapedData={scrapedData} />
-            )}
-            {activeTab === "insights" && <AIInsights data={scrapedData} />}
-            {activeTab === "analytics" && <AnalyticsDashboard />}
-            {activeTab === "proxy" && <ProxyManager />}
-            {activeTab === "settings" && <LanguageSettings />}
-            </div>
+            <ContentRouter
+              activeTab={activeTab}
+              scrapedData={scrapedData}
+              setCrawlData={setCrawlData}
+              onScrapeSuccess={handleScrapeSuccess}
+              onBulkComplete={handleBulkComplete}
+              onSelectHistoryItem={handleSelectHistoryItem}
+              onSelectTab={selectTab}
+            />
 
             {/* Results */}
             {scrapedData && (activeTab === "scrape" || activeTab === "custom" || activeTab === "crawl") && (

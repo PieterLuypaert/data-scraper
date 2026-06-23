@@ -1,0 +1,123 @@
+import { API_BASE_URL } from './constants';
+import { prepareDataForExport } from './prepareData';
+import { exportCrawlToPDF } from './crawl';
+
+/**
+ * Export data to PDF file
+ * @param {Object} data - Data to export (can be single page or crawl data with pages array)
+ * @param {string} filename - Filename (without extension)
+ */
+export async function exportToPDF(data, filename = 'scraped-data') {
+  try {
+    // Check if this is crawl data with multiple pages
+    if (data.pages && Array.isArray(data.pages) && data.pages.length > 1) {
+      // Export all pages from crawl
+      return await exportCrawlToPDF(data, filename);
+    }
+
+    // Single page export
+    // Remove screenshot from payload to avoid 413 errors
+    // Screenshots are typically very large as base64 strings
+    let preparedData = prepareDataForExport(data);
+
+    // Check payload size before sending and compress if needed
+    let payload = JSON.stringify({ data: preparedData });
+    let payloadSizeMB = payload.length / (1024 * 1024);
+
+    // Progressive compression: reduce arrays if payload is too large
+    // Only compress if payload is very large (>10MB) to avoid unnecessary data loss
+    // Let the server handle smaller payloads
+    if (payloadSizeMB > 10) {
+      console.warn(`PDF payload size is ${payloadSizeMB.toFixed(2)}MB, compressing...`);
+      const compressionLevels = [
+        { threshold: 10, maxArraySize: 100 },
+        { threshold: 20, maxArraySize: 50 },
+        { threshold: 50, maxArraySize: 25 },
+      ];
+
+      for (const level of compressionLevels) {
+        if (payloadSizeMB > level.threshold) {
+          console.warn(`Compressing to max ${level.maxArraySize} items per array...`);
+          const moreCompressed = { ...preparedData };
+          Object.keys(moreCompressed).forEach(key => {
+            if (Array.isArray(moreCompressed[key]) && moreCompressed[key].length > level.maxArraySize) {
+              moreCompressed[`${key}_total`] = moreCompressed[key].length;
+              moreCompressed[key] = moreCompressed[key].slice(0, level.maxArraySize);
+              moreCompressed[`${key}_truncated`] = true;
+            }
+          });
+          preparedData = moreCompressed;
+          payload = JSON.stringify({ data: preparedData });
+          payloadSizeMB = payload.length / (1024 * 1024);
+        }
+      }
+    }
+
+    // Log payload size for debugging, but don't block small payloads
+    if (payloadSizeMB > 1) {
+      console.log(`Exporting PDF with payload size: ${payloadSizeMB.toFixed(2)}MB`);
+    }
+
+    const response = await fetch(`${API_BASE_URL}/export/pdf`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: payload,
+    });
+
+    // Check content type to determine if it's an error
+    const contentType = response.headers.get('content-type');
+
+    if (!response.ok) {
+      // Handle 413 Payload Too Large specifically
+      if (response.status === 413) {
+        throw new Error(`Server weigert export: payload te groot (${payloadSizeMB.toFixed(2)}MB). De server heeft een limiet ingesteld. Probeer een kleinere dataset of verwijder grote arrays.`);
+      }
+
+      // Try to parse as JSON first
+      let errorMessage = 'Failed to export PDF';
+      try {
+        const errorData = await response.json();
+        errorMessage = errorData.error || errorMessage;
+      } catch (jsonError) {
+        // If not JSON, try to get text
+        try {
+          const errorText = await response.text();
+          if (errorText.includes('<!DOCTYPE')) {
+            errorMessage = 'Server error: Received HTML instead of PDF. Check server logs.';
+          } else {
+            errorMessage = errorText.substring(0, 200);
+          }
+        } catch (textError) {
+          errorMessage = `HTTP ${response.status}: ${response.statusText}`;
+        }
+      }
+      throw new Error(errorMessage);
+    }
+
+    // Check if response is actually a PDF
+    if (!contentType || !contentType.includes('application/pdf')) {
+      const errorText = await response.text();
+      throw new Error('Server returned non-PDF content. ' + errorText.substring(0, 100));
+    }
+
+    const blob = await response.blob();
+
+    // Verify it's actually a PDF blob
+    if (blob.type && !blob.type.includes('pdf')) {
+      throw new Error('Downloaded file is not a PDF');
+    }
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement('a');
+    link.href = url;
+    link.download = `${filename}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    URL.revokeObjectURL(url);
+  } catch (error) {
+    throw new Error('Failed to export PDF: ' + error.message);
+  }
+}
