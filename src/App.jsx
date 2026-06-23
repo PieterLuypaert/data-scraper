@@ -187,11 +187,28 @@ function App() {
     setSidebarOpen(false);
   };
 
+  const sidebarPanelClass =
+    "relative flex flex-col overflow-hidden border-indigo-200/40 bg-white/55 backdrop-blur-2xl";
+
+  const SidebarAmbient = () => (
+    <div className="pointer-events-none absolute inset-0 -z-0">
+      <div className="absolute -left-16 -top-16 h-44 w-44 rounded-full bg-indigo-400/20 blur-3xl" />
+      <div className="absolute -bottom-12 -right-8 h-36 w-36 rounded-full bg-violet-400/15 blur-3xl" />
+      <div className="absolute inset-0 bg-gradient-to-b from-indigo-50/30 via-transparent to-violet-50/20" />
+    </div>
+  );
+
+  const SidebarFooter = () => (
+    <div className="relative border-t border-indigo-200/40 bg-white/25 px-6 py-4 text-xs text-gray-400">
+      <p className="truncate">Developed by Pieter Luypaert</p>
+    </div>
+  );
+
   const SidebarNav = () => (
     <nav className="flex flex-col gap-6">
       {navGroups.map((group) => (
         <div key={group.key}>
-          <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-gray-400">
+          <p className="mb-2 px-3 text-[11px] font-bold uppercase tracking-wider text-indigo-400/90">
             {t(`tabGroups.${group.key}`)}
           </p>
           <div className="flex flex-col gap-1">
@@ -204,17 +221,21 @@ function App() {
                 <button
                   key={id}
                   onClick={() => selectTab(id)}
-                  className={`group flex items-center gap-3 rounded-xl px-3 py-2.5 text-sm font-semibold transition-all duration-150 ${
+                  className={`group flex items-center gap-3 rounded-xl px-2.5 py-2 text-sm font-semibold transition-all duration-150 ${
                     isActive
-                      ? "bg-indigo-600 text-white shadow-soft"
-                      : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
+                      ? "bg-gradient-to-r from-indigo-600 via-indigo-600 to-violet-600 text-white shadow-soft ring-1 ring-indigo-500/25"
+                      : "text-gray-600 hover:bg-white/70 hover:text-indigo-700 hover:shadow-sm hover:ring-1 hover:ring-indigo-100/80"
                   }`}
                 >
-                  <Icon
-                    className={`h-[18px] w-[18px] flex-shrink-0 transition-colors ${
-                      isActive ? "text-white" : "text-gray-400 group-hover:text-indigo-600"
+                  <span
+                    className={`flex h-8 w-8 flex-shrink-0 items-center justify-center rounded-lg transition-colors ${
+                      isActive
+                        ? "bg-white/20 text-white"
+                        : "bg-gray-100/80 text-gray-400 group-hover:bg-indigo-50 group-hover:text-indigo-600"
                     }`}
-                  />
+                  >
+                    <Icon className="h-[17px] w-[17px]" />
+                  </span>
                   <span className="truncate">{tab.getLabel()}</span>
                 </button>
               );
@@ -238,9 +259,12 @@ function App() {
 
       <div className="flex min-h-screen">
         {/* Sidebar (desktop) */}
-        <aside className="sticky top-0 hidden h-screen w-72 flex-shrink-0 flex-col border-r border-gray-200/70 bg-white/70 backdrop-blur-xl lg:flex">
-          <div className="px-6 pt-7 pb-5">
-            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-white/70 px-3 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">
+        <aside
+          className={`sticky top-0 hidden h-screen w-72 flex-shrink-0 border-r lg:flex ${sidebarPanelClass}`}
+        >
+          <SidebarAmbient />
+          <div className="relative px-6 pt-7 pb-5">
+            <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-3 py-1 text-[11px] font-semibold text-indigo-700 shadow-sm">
               <span className="relative flex h-1.5 w-1.5">
                 <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
                 <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
@@ -250,13 +274,14 @@ function App() {
             <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
               {t("app.title")}
             </h1>
+            <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-gray-500">
+              {t("app.description")}
+            </p>
           </div>
-          <div className="flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
+          <div className="relative flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
             <SidebarNav />
           </div>
-          <div className="border-t border-gray-200/70 px-6 py-4 text-xs text-gray-400">
-            Developed by Pieter Luypaert
-          </div>
+          <SidebarFooter />
         </aside>
 
         {/* Mobile slide-over sidebar */}
@@ -266,21 +291,34 @@ function App() {
               className="absolute inset-0 bg-gray-900/40 backdrop-blur-sm"
               onClick={() => setSidebarOpen(false)}
             />
-            <aside className="absolute left-0 top-0 flex h-full w-72 max-w-[85%] flex-col bg-white shadow-elevated animate-fade-in-up">
-              <div className="flex items-center justify-between px-6 pt-6 pb-4">
-                <h1 className="text-xl font-extrabold tracking-tight text-gradient-brand">
-                  {t("app.title")}
-                </h1>
+            <aside
+              className={`absolute left-0 top-0 flex h-full w-72 max-w-[85%] flex-col shadow-elevated animate-fade-in-up ${sidebarPanelClass}`}
+            >
+              <SidebarAmbient />
+              <div className="relative flex items-center justify-between px-6 pt-6 pb-4">
+                <div className="min-w-0">
+                  <div className="mb-1 inline-flex items-center gap-2 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-2.5 py-0.5 text-[10px] font-semibold text-indigo-700">
+                    <span className="relative flex h-1.5 w-1.5">
+                      <span className="absolute inline-flex h-full w-full animate-ping rounded-full bg-indigo-400 opacity-75" />
+                      <span className="relative inline-flex h-1.5 w-1.5 rounded-full bg-indigo-500" />
+                    </span>
+                    Web Scraping Studio
+                  </div>
+                  <h1 className="truncate text-xl font-extrabold tracking-tight text-gradient-brand">
+                    {t("app.title")}
+                  </h1>
+                </div>
                 <button
                   onClick={() => setSidebarOpen(false)}
-                  className="rounded-lg p-2 text-gray-500 hover:bg-gray-100"
+                  className="rounded-lg p-2 text-gray-500 transition-colors hover:bg-white/70 hover:text-indigo-700"
                 >
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
+              <div className="relative flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
                 <SidebarNav />
               </div>
+              <SidebarFooter />
             </aside>
           </div>
         )}
@@ -288,10 +326,10 @@ function App() {
         {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Top bar */}
-          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8 lg:hidden">
+          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-indigo-200/40 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
+              className="rounded-lg p-2 text-gray-600 transition-colors hover:bg-indigo-50 hover:text-indigo-700"
               aria-label="Menu"
             >
               <Menu className="h-5 w-5" />
