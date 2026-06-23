@@ -5,7 +5,7 @@ import { InfoBadge } from './ui/tooltip';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
-import { Loader2, Camera, HelpCircle, ChevronDown, Globe, Sparkles, ArrowRight } from 'lucide-react';
+import { Loader2, Camera, HelpCircle, ChevronDown, Globe, ArrowRight } from 'lucide-react';
 
 export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   const [url, setUrl] = useState('');
@@ -53,12 +53,7 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   };
 
   return (
-    <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-4 py-10 text-center md:py-16">
-      {/* Hero heading */}
-      <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-3 py-1 text-xs font-semibold text-indigo-700">
-        <Sparkles className="h-3.5 w-3.5" />
-        Web Scraper
-      </div>
+    <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-4 text-center">
       <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
         Start met <span className="text-gradient-brand">scrapen</span>
       </h1>

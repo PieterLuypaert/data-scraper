@@ -182,8 +182,6 @@ function App() {
     { key: "manage", ids: ["history", "changes", "proxy", "settings"] },
   ];
   const tabById = (id) => tabs.find((tt) => tt.id === id);
-  const activeMeta = tabs.find((tt) => tt.id === activeTab);
-
   const selectTab = (id) => {
     setActiveTab(id);
     setSidebarOpen(false);
@@ -290,37 +288,24 @@ function App() {
         {/* Main content */}
         <div className="flex min-w-0 flex-1 flex-col">
           {/* Top bar */}
-          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8">
+          <div className="sticky top-0 z-30 flex items-center gap-3 border-b border-gray-200/70 bg-background/80 px-4 py-3 backdrop-blur-xl md:px-8 lg:hidden">
             <button
               onClick={() => setSidebarOpen(true)}
-              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100 lg:hidden"
+              className="rounded-lg p-2 text-gray-600 hover:bg-gray-100"
               aria-label="Menu"
             >
               <Menu className="h-5 w-5" />
             </button>
-            {activeMeta && (
-              <div className="flex min-w-0 items-center gap-3">
-                <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-xl bg-indigo-50 text-indigo-600">
-                  <activeMeta.icon className="h-[18px] w-[18px]" />
-                </div>
-                <div className="min-w-0">
-                  <h2 className="truncate text-base font-bold text-gray-900">
-                    {activeMeta.getLabel()}
-                  </h2>
-                  <p className="truncate text-xs text-gray-500">
-                    {activeMeta.getTooltip()}
-                  </p>
-                </div>
-              </div>
-            )}
           </div>
 
-          <main className="mx-auto w-full max-w-[1600px] flex-1 px-4 py-6 md:px-8 md:py-8">
-            <div key={activeTab} className="animate-fade-in-up">
+          <main className="mx-auto flex w-full max-w-[1600px] flex-1 flex-col px-4 py-6 md:px-8 md:py-8">
+            <div key={activeTab} className="animate-fade-in-up flex flex-1 flex-col">
             {activeTab === "scrape" && (
-              <ScrapeForm
-                onScrapeSuccess={(data) => handleScrapeSuccess(data)}
-              />
+              <div className="flex w-full flex-1 items-center justify-center">
+                <ScrapeForm
+                  onScrapeSuccess={(data) => handleScrapeSuccess(data)}
+                />
+              </div>
             )}
             {activeTab === "crawl" && (
               <CrawlForm
