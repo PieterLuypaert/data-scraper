@@ -354,47 +354,58 @@ function App() {
       </div>
 
       <div className="flex h-screen">
-        {/* Sidebar (desktop) */}
+        {/* Sidebar (desktop) — animate width so it glides instead of snapping */}
         <aside
-          className={`sticky top-0 hidden h-screen w-72 flex-shrink-0 border-r ${
-            sidebarCollapsed ? "" : "lg:flex"
-          } ${sidebarPanelClass}`}
+          aria-hidden={sidebarCollapsed}
+          className={cn(
+            "sticky top-0 hidden h-screen flex-shrink-0 overflow-hidden border-indigo-200/40 bg-white/55 backdrop-blur-2xl",
+            "transition-[width] duration-300 ease-in-out motion-reduce:transition-none lg:block",
+            sidebarCollapsed ? "lg:w-0 border-r-0" : "lg:w-72 border-r"
+          )}
         >
-          {SidebarAmbient()}
-          {/* Collapse handle on the sidebar's right edge */}
-          <button
-            onClick={() => setSidebarCollapsed(true)}
-            aria-label="Sidebar inklappen"
-            title="Sidebar inklappen"
-            className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border border-r-0 border-indigo-200/60 bg-white/80 py-3 pl-1.5 pr-1 text-gray-500 shadow-soft backdrop-blur transition-colors hover:bg-indigo-50 hover:text-indigo-700"
-          >
-            <PanelLeftClose className="h-4 w-4" />
-          </button>
-          <div className="relative px-6 pt-7 pb-5">
-            <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
-              {t("app.title")}
-            </h1>
-            <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-gray-500">
-              {t("app.description")}
-            </p>
+          {/* Fixed-width inner shell keeps content from squishing mid-animation */}
+          <div className="relative flex h-full w-72 flex-col">
+            {SidebarAmbient()}
+            {/* Collapse handle on the sidebar's right edge */}
+            <button
+              onClick={() => setSidebarCollapsed(true)}
+              aria-label="Sidebar inklappen"
+              title="Sidebar inklappen"
+              tabIndex={sidebarCollapsed ? -1 : 0}
+              className="absolute right-0 top-1/2 z-20 -translate-y-1/2 rounded-l-lg border border-r-0 border-indigo-200/60 bg-white/80 py-3 pl-1.5 pr-1 text-gray-500 shadow-soft backdrop-blur transition-colors hover:bg-indigo-50 hover:text-indigo-700"
+            >
+              <PanelLeftClose className="h-4 w-4" />
+            </button>
+            <div className="relative px-6 pt-7 pb-5">
+              <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
+                {t("app.title")}
+              </h1>
+              <p className="mt-1.5 line-clamp-3 text-xs leading-relaxed text-gray-500">
+                {t("app.description")}
+              </p>
+            </div>
+            <div className="relative flex-1 overflow-y-auto scrollbar-none px-3 pb-6">
+              {SidebarNav()}
+            </div>
+            {SidebarFooter()}
           </div>
-          <div className="relative flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
-            {SidebarNav()}
-          </div>
-          {SidebarFooter()}
         </aside>
 
         {/* Desktop expand handle on the left edge (only when collapsed) */}
-        {sidebarCollapsed && (
-          <button
-            onClick={() => setSidebarCollapsed(false)}
-            aria-label="Sidebar uitklappen"
-            title="Sidebar uitklappen"
-            className="fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-lg border border-l-0 border-indigo-200/60 bg-white/70 py-3 pl-1 pr-1.5 text-gray-400 shadow-soft backdrop-blur transition-colors hover:bg-indigo-50 hover:text-indigo-700 lg:flex"
-          >
-            <PanelLeftOpen className="h-4 w-4" />
-          </button>
-        )}
+        <button
+          onClick={() => setSidebarCollapsed(false)}
+          aria-label="Sidebar uitklappen"
+          title="Sidebar uitklappen"
+          tabIndex={sidebarCollapsed ? 0 : -1}
+          className={cn(
+            "fixed left-0 top-1/2 z-40 hidden -translate-y-1/2 rounded-r-lg border border-l-0 border-indigo-200/60 bg-white/70 py-3 pl-1 pr-1.5 text-gray-400 shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-50 hover:text-indigo-700",
+            sidebarCollapsed
+              ? "translate-x-0 opacity-100 lg:flex"
+              : "-translate-x-full opacity-0 lg:flex lg:pointer-events-none"
+          )}
+        >
+          <PanelLeftOpen className="h-4 w-4" />
+        </button>
 
         {/* Mobile slide-over sidebar */}
         {sidebarOpen && (
@@ -420,7 +431,7 @@ function App() {
                   <X className="h-5 w-5" />
                 </button>
               </div>
-              <div className="relative flex-1 overflow-y-auto pretty-scroll px-3 pb-6">
+              <div className="relative flex-1 overflow-y-auto scrollbar-none px-3 pb-6">
                 {SidebarNav()}
               </div>
               {SidebarFooter()}

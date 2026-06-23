@@ -77,6 +77,15 @@
     display: none;
   }
 
+  /* Hide the scrollbar but keep scrolling (used in the sidebar) */
+  .scrollbar-none {
+    -ms-overflow-style: none;
+    scrollbar-width: none;
+  }
+  .scrollbar-none::-webkit-scrollbar {
+    display: none;
+  }
+
   /* Subtle, modern scrollbars for the rest of the app */
   .pretty-scroll::-webkit-scrollbar {
     width: 10px;
