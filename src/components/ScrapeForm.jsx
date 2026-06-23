@@ -1,19 +1,18 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Input } from './ui/input';
 import { Alert, AlertDescription } from './ui/alert';
-import { Tooltip, InfoBadge } from './ui/tooltip';
-import { HelpText } from './ui/help-text';
+import { InfoBadge } from './ui/tooltip';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
-import { Loader2, Camera, Info } from 'lucide-react';
+import { Loader2, Camera, HelpCircle, ChevronDown, Globe, Sparkles, ArrowRight } from 'lucide-react';
 
 export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
   const [forcePuppeteer, setForcePuppeteer] = useState(false);
+  const [helpOpen, setHelpOpen] = useState(false);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -35,6 +34,7 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
       
       onScrapeSuccess(data);
       setUrl('');
+      setHelpOpen(false);
     } catch (err) {
       console.error('ScrapeForm error:', err);
       const errorMessage = err.message || 'Er is een fout opgetreden';
@@ -53,65 +53,104 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
   };
 
   return (
-    <div className="w-full max-w-4xl mx-auto space-y-4">
-      <HelpText type="info" title="Hoe werkt dit?">
-        Voer een URL in om een enkele webpagina te scrapen. De scraper extraheert automatisch links, afbeeldingen, tekst, meta tags en meer. 
-        Gebruik <strong>Crawlen</strong> voor meerdere pagina's of <strong>Bulk Scrapen</strong> voor meerdere URLs tegelijk.
-      </HelpText>
-      
-      <form onSubmit={handleSubmit} className="space-y-4">
-        <div className="space-y-2">
-          <div className="flex items-center gap-2">
-            <label htmlFor="scrape-url" className="text-sm font-medium text-gray-700">
-              Website URL
-            </label>
-            <InfoBadge tooltip="Voer een volledige URL in, bijvoorbeeld: https://example.com" />
+    <div className="mx-auto flex w-full max-w-3xl flex-col items-center px-4 py-10 text-center md:py-16">
+      {/* Hero heading */}
+      <div className="mb-3 inline-flex items-center gap-1.5 rounded-full border border-indigo-200/70 bg-indigo-50/60 px-3 py-1 text-xs font-semibold text-indigo-700">
+        <Sparkles className="h-3.5 w-3.5" />
+        Web Scraper
+      </div>
+      <h1 className="text-3xl font-extrabold tracking-tight text-gray-900 sm:text-4xl md:text-5xl">
+        Start met <span className="text-gradient-brand">scrapen</span>
+      </h1>
+      <p className="mt-3 max-w-xl text-sm text-gray-500 md:text-base">
+        Plak een URL en haal in één klik links, afbeeldingen, tekst, meta tags en meer op.
+      </p>
+
+      {/* URL bar */}
+      <form onSubmit={handleSubmit} className="mt-8 w-full max-w-2xl">
+        <label htmlFor="scrape-url" className="sr-only">
+          Website URL
+        </label>
+        <div
+          className={`group flex items-center gap-2 rounded-2xl border bg-white p-2 shadow-elevated transition-all ${
+            loading ? 'border-indigo-200' : 'border-gray-200 focus-within:border-indigo-400 focus-within:ring-4 focus-within:ring-indigo-500/15'
+          }`}
+        >
+          <div className="flex h-11 w-11 flex-shrink-0 items-center justify-center rounded-xl bg-gray-50 text-gray-400 group-focus-within:bg-indigo-50 group-focus-within:text-indigo-500">
+            <Globe className="h-5 w-5" />
           </div>
-          <div className="flex gap-2">
-            <Input
-              id="scrape-url"
-              type="text"
-              placeholder="https://voorbeeld.com"
-              value={url}
-              onChange={(e) => setUrl(e.target.value)}
-              onKeyPress={handleKeyPress}
-              disabled={loading}
-              className="flex-1"
-            />
-            <Tooltip content="Start het scrapen van de website">
-              <Button type="submit" disabled={loading}>
-                {loading ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Laden...
-                  </>
-                ) : (
-                  'Scrapen'
-                )}
-              </Button>
-            </Tooltip>
-          </div>
+          <input
+            id="scrape-url"
+            type="text"
+            placeholder="https://voorbeeld.com"
+            value={url}
+            onChange={(e) => setUrl(e.target.value)}
+            onKeyPress={handleKeyPress}
+            disabled={loading}
+            autoComplete="off"
+            className="h-11 min-w-0 flex-1 bg-transparent px-1 text-base text-gray-900 placeholder:text-gray-400 focus:outline-none disabled:opacity-50"
+          />
+          <Button type="submit" size="lg" disabled={loading} className="flex-shrink-0">
+            {loading ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Laden...
+              </>
+            ) : (
+              <>
+                Scrapen
+                <ArrowRight className="ml-2 h-4 w-4" />
+              </>
+            )}
+          </Button>
         </div>
-        
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 cursor-pointer text-sm text-gray-700">
+
+        {/* Options row */}
+        <div className="mt-4 flex flex-wrap items-center justify-center gap-x-5 gap-y-2">
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
             <input
               type="checkbox"
               checked={forcePuppeteer}
               onChange={(e) => setForcePuppeteer(e.target.checked)}
               disabled={loading}
-              className="rounded"
+              className="rounded accent-indigo-600"
             />
             <Camera className="h-4 w-4" />
             <span>Altijd screenshot maken</span>
             <InfoBadge tooltip="Gebruikt Puppeteer (headless browser) voor JavaScript-heavy sites. Langzamer maar geeft screenshots en werkt met dynamische content." />
           </label>
+
+          <button
+            type="button"
+            onClick={() => setHelpOpen((v) => !v)}
+            className="inline-flex items-center gap-1.5 text-sm font-medium text-gray-400 transition-colors hover:text-gray-600"
+          >
+            <HelpCircle className="h-4 w-4" />
+            Hoe werkt dit?
+            <ChevronDown
+              className={`h-3.5 w-3.5 transition-transform duration-200 ${
+                helpOpen ? 'rotate-180' : ''
+              }`}
+            />
+          </button>
         </div>
-        
+
+        {helpOpen && (
+          <p className="mx-auto mt-3 max-w-prose text-sm leading-relaxed text-gray-500">
+            Voer een URL in om een enkele webpagina te scrapen. De scraper extraheert
+            automatisch links, afbeeldingen, tekst, meta tags en meer. Gebruik{' '}
+            <strong className="font-semibold text-gray-600">Crawlen</strong> voor meerdere
+            pagina's of <strong className="font-semibold text-gray-600">Bulk Scrapen</strong>{' '}
+            voor meerdere URLs tegelijk.
+          </p>
+        )}
+
         {error && (
-          <Alert variant="destructive">
-            <AlertDescription>{error}</AlertDescription>
-          </Alert>
+          <div className="mt-4">
+            <Alert variant="destructive">
+              <AlertDescription>{error}</AlertDescription>
+            </Alert>
+          </div>
         )}
       </form>
     </div>
