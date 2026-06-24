@@ -31,7 +31,7 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 data-scraper/
 ├── server.js                    # Express bootstrap (middleware, routes, shutdown)
 ├── scripts/
-│   └── kill-port.ps1           # Port cleanup for npm run start:clean
+│   └── kill-port.js            # Port cleanup for npm run start:clean (cross-platform)
 ├── server/
 │   ├── config/
 │   │   └── index.js            # Port, Puppeteer, proxy, timeout settings
@@ -41,9 +41,7 @@ data-scraper/
 │   │   ├── scrape.js           # Scrape endpoints
 │   │   ├── custom.js           # Custom CSS selector endpoint
 │   │   ├── crawl.js            # Crawler endpoints
-│   │   ├── compare.js          # Change detection API
 │   │   ├── proxy.js            # Proxy pool management
-│   │   ├── insights.js         # AI insights API
 │   │   └── export.js           # Barrel → services/export/*
 │   ├── services/
 │   │   └── export/
@@ -61,8 +59,6 @@ data-scraper/
 │   │   └── extractors/         # Domain-specific extractors
 │   └── utils/
 │       ├── helpers.js          # URL normalization, error mapping
-│       ├── compare.js          # Server-side scrape diff
-│       ├── aiInsights.js       # Server-side AI insights
 │       ├── ssrfGuard.js        # SSRF protection
 │       ├── robots.js           # robots.txt checks
 │       ├── proxyManager.js     # Proxy pool logic
@@ -100,7 +96,7 @@ data-scraper/
 │   ├── App.jsx
 │   ├── main.jsx
 │   └── index.css
-├── tests/                      # Vitest (helpers, ssrf, export)
+├── tests/                      # Vitest (helpers, ssrf, export, frontend-features)
 ├── package.json
 └── vite.config.js
 ```
@@ -116,6 +112,7 @@ data-scraper/
 | App utils | camelCase `.js` in `src/utils/` | `changeDetection.js` |
 | shadcn helper | `@/lib/utils` | `cn()` — niet verwarren met `@/utils/` |
 
+**Client-side analyse:** Change detection en AI insights draaien in de browser (`src/utils/changeDetection.js`, `src/utils/aiInsights.js`) op reeds gescrapede data en localStorage-geschiedenis. Er zijn geen server-API-endpoints meer voor deze features.
 
 ## Installatie
 
@@ -549,7 +546,10 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 #### Utilities
 
 - `server/utils/helpers.js` - Helper functies (URL conversion, attribute extraction)
-- `server/utils/compare.js` - Change detection logica
+- `server/utils/ssrfGuard.js` - SSRF-bescherming
+- `server/utils/robots.js` - robots.txt checks
+- `server/utils/proxyManager.js` - Proxy pool logica
+- `server/utils/errorResponse.js` - Consistente JSON-foutresponses
 
 #### Scrapers
 
@@ -573,53 +573,33 @@ De code is modulair georganiseerd voor onderhoudbaarheid:
 - `server/routes/scrape.js` - Main scrape endpoint handler
 - `server/routes/custom.js` - Custom CSS selector endpoint handler
 - `server/routes/crawl.js` - Website crawler endpoint handler
-- `server/routes/compare.js` - Change detection endpoint handler
-- `server/routes/insights.js` - AI insights endpoint handler
-
-#### Utilities
-
-- `server/utils/helpers.js` - Helper functies (URL conversion, attribute extraction)
-- `server/utils/compare.js` - Change detection logica
-- `server/utils/aiInsights.js` - Backend AI insights utilities (samenvattingen, categorisering, topics, sentiment)
+- `server/routes/proxy.js` - Proxy pool management
+- `server/routes/export.js` - Export endpoints (Excel, PDF)
 
 ### Frontend Structuur
 
 #### API
 
-- `src/api/scraper.js` - API calls voor scraping, crawling, custom selectors
+- `src/api/scraper.js` - API calls voor scraping, crawling, proxy
 
 #### Utils
 
 - `src/utils/validation.js` - URL validatie
 - `src/utils/clipboard.js` - Clipboard utilities
 - `src/utils/storage.js` - localStorage voor geschiedenis en analytics
-- `src/utils/export.js` - Export functionaliteit (JSON/CSV)
-- `src/utils/changeDetection.js` - Frontend change detection
-- `src/utils/contactExtraction.js` - Contact info extractie
-- `src/utils/contentAnalysis.js` - Content analyse utilities
+- `src/utils/export.js` - Export functionaliteit (JSON, CSV, Excel, PDF)
+- `src/utils/changeDetection.js` - Change detection (client-side, History-tab)
 - `src/utils/languageDetection.js` - Taal detectie
 - `src/utils/sentimentAnalysis.js` - Sentiment analyse
-- `src/utils/aiInsights.js` - AI-powered content insights utilities (samenvattingen, categorisering, topics, sentiment)
-- `src/utils/translation.js` - Vertaling utilities voor gescrapede content
+- `src/utils/aiInsights.js` - AI insights (client-side, Insights-tab)
 - `src/i18n/index.js` - i18n systeem voor multi-language UI support
 
 #### Components
 
-- `src/components/ScrapeForm.jsx` - Form component voor normale scraping met help-teksten en tooltips
-- `src/components/CrawlForm.jsx` - Website crawler form component met contextuele hints
-- `src/components/CustomSelector.jsx` - Custom CSS selector UI met templates en uitleg
-- `src/components/ScrapeResultsExtended.jsx` - Uitgebreide resultaten weergave met export tooltips
-- `src/components/BulkScrapeForm.jsx` - Bulk scraping component met help-teksten
-- `src/components/AnalyticsDashboard.jsx` - Analytics dashboard
-- `src/components/HistoryManager.jsx` - Geschiedenis beheer met empty states en tooltips
-- `src/components/ChangeDetection.jsx` - Change detection UI
-- `src/components/SEOAnalysis.jsx` - SEO analysis component met score en aanbevelingen
-- `src/components/DataVisualization.jsx` - Data visualization met charts, word clouds en link graphs
-- `src/components/SearchAndFilter.jsx` - Zoeken en filteren component
-- `src/components/AIInsights.jsx` - AI-powered content insights component met samenvattingen, categorisering en sentiment analyse
-- `src/components/LanguageSettings.jsx` - Taalinstellingen component voor multi-language support
-- `src/components/ui/tooltip.jsx` - Tooltip component voor hover uitleg
-- `src/components/ui/help-text.jsx` - Help tekst en empty state componenten
+Feature-componenten staan onder `src/components/features/` (scrape, crawl, bulk, custom-selector, results, analytics, history, seo, insights, proxy, settings). Zware analyse-tabs worden lazy geladen via `ContentRouter`.
+
+- `src/components/layout/` - Sidebar, ContentRouter, CapabilitiesGrid
+- `src/components/ui/` - shadcn UI primitives
 
 ## API Endpoints
 
@@ -759,91 +739,6 @@ Scrape met custom CSS selectors.
   "data": {
     "Product Images": [...],
     "Prices": [...]
-  }
-}
-```
-
-### POST /api/compare
-
-Vergelijk twee scrapes om veranderingen te detecteren.
-
-**Request:**
-
-```json
-{
-  "oldData": {...},
-  "newData": {...}
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "changes": {
-    "added": {...},
-    "removed": {...},
-    "modified": {...},
-    "statistics": {...}
-  }
-}
-```
-
-### POST /api/insights/generate
-
-Genereer AI-powered content insights voor gescrapede data.
-
-**Request:**
-
-```json
-{
-  "data": {
-    "title": "...",
-    "description": "...",
-    "fullText": "...",
-    "headings": {...},
-    "paragraphs": [...]
-  }
-}
-```
-
-**Response:**
-
-```json
-{
-  "success": true,
-  "insights": {
-    "summary": "Automatische samenvatting van de content...",
-    "categories": {
-      "primary": "blog",
-      "primaryConfidence": 85,
-      "secondary": "news",
-      "secondaryConfidence": 30,
-      "allCategories": [...]
-    },
-    "topics": [
-      {"name": "Technology", "score": 15, "relevance": 75},
-      {"name": "Business", "score": 8, "relevance": 40}
-    ],
-    "sentiment": {
-      "sentiment": "positive",
-      "score": 45,
-      "positive": 12,
-      "negative": 3,
-      "neutral": 85
-    },
-    "sentimentBySection": {
-      "headings": {...},
-      "paragraphs": {...},
-      "overall": {...},
-      "meta": {...}
-    },
-    "language": {
-      "language": "Nederlands",
-      "code": "nl",
-      "confidence": 92
-    }
   }
 }
 ```

@@ -5,7 +5,7 @@
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "start:clean": "powershell -ExecutionPolicy Bypass -File ./scripts/kill-port.ps1 && npm start",
+    "start:clean": "node scripts/kill-port.js && npm start",
     "dev": "node server.js",
     "build": "vite build",
     "preview": "vite preview",

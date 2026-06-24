@@ -1,14 +1,39 @@
+import { lazy, Suspense } from "react";
 import { ScrapeForm } from "@/components/features/scrape";
 import { BulkScrapeForm } from "@/components/features/bulk";
-import { AnalyticsDashboard, DataVisualization } from "@/components/features/analytics";
 import { HistoryManager, ChangeDetection } from "@/components/features/history";
 import { CustomSelector } from "@/components/features/custom-selector";
 import { CrawlForm } from "@/components/features/crawl";
-import { SEOAnalysis } from "@/components/features/seo";
-import { ProxyManager } from "@/components/features/proxy";
-import { AIInsights } from "@/components/features/insights";
 import { LanguageSettings } from "@/components/features/settings";
 import { CapabilitiesGrid } from "./CapabilitiesGrid";
+
+const AnalyticsDashboard = lazy(() =>
+  import("@/components/features/analytics").then((m) => ({ default: m.AnalyticsDashboard }))
+);
+const DataVisualization = lazy(() =>
+  import("@/components/features/analytics").then((m) => ({ default: m.DataVisualization }))
+);
+const SEOAnalysis = lazy(() =>
+  import("@/components/features/seo").then((m) => ({ default: m.SEOAnalysis }))
+);
+const ProxyManager = lazy(() =>
+  import("@/components/features/proxy").then((m) => ({ default: m.ProxyManager }))
+);
+const AIInsights = lazy(() =>
+  import("@/components/features/insights").then((m) => ({ default: m.AIInsights }))
+);
+
+function TabFallback() {
+  return (
+    <div className="flex flex-1 items-center justify-center py-16 text-sm text-gray-500">
+      Laden…
+    </div>
+  );
+}
+
+function LazyTab({ children }) {
+  return <Suspense fallback={<TabFallback />}>{children}</Suspense>;
+}
 
 /**
  * Renders the feature panel for the active tab. Layout shell (sidebar, top bar,
@@ -45,17 +70,12 @@ export function ContentRouter({
       {activeTab === "crawl" && (
         <CrawlForm
           onCrawlSuccess={(data) => {
-            // Store full crawl data with all pages for export
             setCrawlData(data);
-            // Show summary or first page for display
             if (data.pages && data.pages.length > 0) {
-              // Merge crawl summary statistics into first page data for display
               const firstPage = { ...data.pages[0] };
               if (data.summary) {
-                // Use crawl summary statistics (totals across all pages)
                 firstPage.statistics = {
                   ...firstPage.statistics,
-                  // Override with crawl summary totals
                   totalLinks: data.summary.totalLinks || 0,
                   totalImages: data.summary.totalImages || 0,
                   totalHeadings: data.summary.totalHeadings || 0,
@@ -66,7 +86,6 @@ export function ContentRouter({
                   totalVideos: data.summary.totalVideos || 0,
                   totalScripts: data.summary.totalScripts || 0,
                   totalStylesheets: data.summary.totalStylesheets || 0,
-                  // Keep other statistics from first page if not in summary
                   totalAudios: firstPage.statistics?.totalAudios || 0,
                   totalIframes: firstPage.statistics?.totalIframes || 0,
                   totalSVGs: firstPage.statistics?.totalSVGs || 0,
@@ -74,7 +93,6 @@ export function ContentRouter({
                   totalDataAttributes: firstPage.statistics?.totalDataAttributes || 0,
                   totalComments: firstPage.statistics?.totalComments || 0,
                 };
-                // Add crawl info
                 firstPage.crawlInfo = {
                   totalPages: data.totalPages,
                   startUrl: data.startUrl,
@@ -101,13 +119,31 @@ export function ContentRouter({
         <HistoryManager onSelectHistoryItem={onSelectHistoryItem} />
       )}
       {activeTab === "changes" && <ChangeDetection />}
-      {activeTab === "seo" && <SEOAnalysis data={scrapedData} />}
-      {activeTab === "visualization" && (
-        <DataVisualization scrapedData={scrapedData} />
+      {activeTab === "seo" && (
+        <LazyTab>
+          <SEOAnalysis data={scrapedData} />
+        </LazyTab>
       )}
-      {activeTab === "insights" && <AIInsights data={scrapedData} />}
-      {activeTab === "analytics" && <AnalyticsDashboard />}
-      {activeTab === "proxy" && <ProxyManager />}
+      {activeTab === "visualization" && (
+        <LazyTab>
+          <DataVisualization scrapedData={scrapedData} />
+        </LazyTab>
+      )}
+      {activeTab === "insights" && (
+        <LazyTab>
+          <AIInsights data={scrapedData} />
+        </LazyTab>
+      )}
+      {activeTab === "analytics" && (
+        <LazyTab>
+          <AnalyticsDashboard />
+        </LazyTab>
+      )}
+      {activeTab === "proxy" && (
+        <LazyTab>
+          <ProxyManager />
+        </LazyTab>
+      )}
       {activeTab === "settings" && <LanguageSettings />}
     </div>
   );

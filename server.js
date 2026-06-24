@@ -6,7 +6,6 @@ const config = require("./server/config");
 const { requireApiKey } = require("./server/middleware/auth");
 const { handleScrape } = require("./server/routes/scrape");
 const { handleCustomSelectors } = require("./server/routes/custom");
-const { handleCompare } = require("./server/routes/compare");
 const {
   handleCrawl,
   handleCrawlProgress,
@@ -26,7 +25,6 @@ const {
   exportCrawlToExcel,
   exportCrawlToPDF,
 } = require("./server/routes/export");
-const { generateInsights } = require("./server/routes/insights");
 const { closeSharedBrowser } = require("./server/scrapers/browserManager");
 
 const app = express();
@@ -78,7 +76,6 @@ app.post("/api/scrape/custom", handleCustomSelectors);
 app.post("/api/crawl", handleCrawl);
 app.get("/api/crawl/progress", handleCrawlProgress);
 app.get("/api/crawl/result", handleCrawlResult);
-app.post("/api/compare", handleCompare);
 
 // Proxy management routes
 app.get("/api/proxy/stats", getProxyStats);
@@ -86,9 +83,6 @@ app.get("/api/proxy/health", checkProxyHealth);
 app.post("/api/proxy/add", addProxy);
 app.post("/api/proxy/remove", removeProxy);
 app.post("/api/proxy/reset", resetProxies);
-
-// AI Insights routes
-app.post("/api/insights/generate", generateInsights);
 
 // Health check endpoint
 app.get("/health", (req, res) => {
