@@ -92,7 +92,7 @@ export function PageTabs({ tabs, active, onChange, className }) {
             className={cn(
               "inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm font-semibold transition-all duration-150",
               isActive
-                ? "bg-gradient-to-r from-indigo-600 to-violet-600 text-white shadow-sm"
+                ? "bg-indigo-600 text-white shadow-sm hover:bg-indigo-700"
                 : "text-gray-600 hover:bg-indigo-50 hover:text-indigo-700"
             )}
           >
