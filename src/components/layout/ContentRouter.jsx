@@ -29,8 +29,17 @@ export function ContentRouter({
     <div key={activeTab} className="animate-fade-in-up flex flex-1 flex-col">
       {activeTab === "scrape" && (
         <div className="flex w-full flex-1 flex-col">
-          <div className="flex w-full flex-1 flex-col items-center justify-center">
-            <ScrapeForm onScrapeSuccess={(data) => onScrapeSuccess(data)} />
+          <div
+            className={
+              scrapedData
+                ? "flex w-full flex-col items-center"
+                : "flex w-full flex-1 flex-col items-center justify-center"
+            }
+          >
+            <ScrapeForm
+              compact={!!scrapedData}
+              onScrapeSuccess={(data) => onScrapeSuccess(data)}
+            />
             {!scrapedData && <CapabilitiesGrid onSelectTab={onSelectTab} />}
           </div>
         </div>

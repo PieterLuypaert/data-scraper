@@ -1,47 +1,57 @@
 import { useState } from 'react';
 import { Button } from './ui/button';
-import { Alert, AlertDescription } from './ui/alert';
 import { InfoBadge } from './ui/tooltip';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
 import { Loader2, Camera, HelpCircle, ChevronDown, Globe, ArrowRight } from 'lucide-react';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 
-export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
+export function ScrapeForm({ onScrapeSuccess, onScrapeError, compact = false }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [forcePuppeteer, setForcePuppeteer] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
+  const { toast, update, dismiss } = useToast();
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     const validation = validateUrl(url);
     if (!validation.isValid) {
-      setError(validation.error);
+      toast({ variant: 'error', title: 'Ongeldige URL', description: validation.error });
       return;
     }
 
     setLoading(true);
+    const loadingId = toast({
+      variant: 'loading',
+      title: 'Bezig met scrapen…',
+      description: validation.normalizedUrl,
+    });
     try {
       const data = await scrapeWebsite(validation.normalizedUrl, forcePuppeteer);
-      
+
       // Save to history and update analytics
       saveToHistory(data, validation.normalizedUrl);
       updateAnalytics(true, validation.normalizedUrl);
-      
+
       onScrapeSuccess(data);
       setUrl('');
       setHelpOpen(false);
+      update(loadingId, {
+        variant: 'success',
+        title: 'Scrape voltooid',
+        description: `Data opgehaald van ${validation.normalizedUrl}`,
+      });
     } catch (err) {
       console.error('ScrapeForm error:', err);
       const errorMessage = err.message || 'Er is een fout opgetreden';
       updateAnalytics(false, validation.normalizedUrl);
-      setError(errorMessage);
       onScrapeError?.(errorMessage);
+      dismiss(loadingId);
+      toast({ variant: 'error', title: 'Scrapen mislukt', description: errorMessage });
     } finally {
       setLoading(false);
     }
@@ -55,16 +65,22 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
 
   return (
     <PageShell size="narrow" centered>
-      <PageHeader
-        align="center"
-        title="Start met"
-        highlight="scrapen"
-        description="Plak een URL en haal in één klik links, afbeeldingen, tekst, meta tags en meer op."
-        className="mb-0"
-      />
+      {compact ? (
+        <p className="mb-1 text-sm font-medium text-gray-500">
+          Scrape nog een website
+        </p>
+      ) : (
+        <PageHeader
+          align="center"
+          title="Start met"
+          highlight="scrapen"
+          description="Plak een URL en haal in één klik links, afbeeldingen, tekst, meta tags en meer op."
+          className="mb-0"
+        />
+      )}
 
       {/* URL bar */}
-      <form onSubmit={handleSubmit} className="mt-8 w-full max-w-2xl">
+      <form onSubmit={handleSubmit} className={`w-full max-w-2xl ${compact ? 'mt-2' : 'mt-8'}`}>
         <label htmlFor="scrape-url" className="sr-only">
           Website URL
         </label>
@@ -140,14 +156,6 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError }) {
             pagina's of <strong className="font-semibold text-gray-600">Bulk Scrapen</strong>{' '}
             voor meerdere URLs tegelijk.
           </p>
-        )}
-
-        {error && (
-          <div className="mt-4">
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          </div>
         )}
       </form>
     </PageShell>
