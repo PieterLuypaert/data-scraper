@@ -66,6 +66,28 @@ function mapScrapingError(error) {
   if (msg.includes('private/internal') || msg.includes('Only http and https')) {
     return msg; // SSRF guard messages are already safe and user-facing
   }
+
+  // HTTP status from the target site (axios sets error.response.status; the
+  // message also contains "status code NNN"). Translate the common ones so the
+  // user understands the site blocked/rejected the request rather than seeing
+  // a generic failure.
+  const statusMatch = msg.match(/status code (\d{3})/);
+  const status = error?.response?.status || (statusMatch ? Number(statusMatch[1]) : null);
+  if (status) {
+    if (status === 403 || status === 401) {
+      return 'Toegang geweigerd (403): De website blokkeert geautomatiseerde verzoeken, vaak via een anti-bot dienst zoals Cloudflare. Probeer "Altijd screenshot maken" aan te zetten of een andere site.';
+    }
+    if (status === 429) {
+      return 'Te veel verzoeken (429): De website beperkt het aantal aanvragen. Wacht even en probeer het opnieuw.';
+    }
+    if (status === 404) {
+      return 'Niet gevonden (404): De pagina bestaat niet op dit adres. Controleer de URL.';
+    }
+    if (status >= 500) {
+      return `Serverfout bij de website (${status}): De doelsite gaf een foutmelding. Probeer het later opnieuw.`;
+    }
+    return `De website gaf een onverwachte status (${status}).`;
+  }
   if (msg.includes('net::ERR')) {
     if (msg.includes('ERR_CONNECTION_REFUSED')) {
       return 'Verbinding geweigerd: De website is mogelijk niet bereikbaar of blokkeert de verbinding.';

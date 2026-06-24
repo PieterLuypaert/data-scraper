@@ -1,4 +1,11 @@
-const puppeteer = require('puppeteer');
+// puppeteer-extra wraps the installed puppeteer and lets us register plugins.
+// The stealth plugin patches the most common headless/automation fingerprints
+// (navigator.webdriver, missing plugins, chrome.runtime, WebGL vendor, etc.)
+// so ordinary sites that only do basic bot-checks accept the request. It is
+// NOT a Cloudflare/CAPTCHA bypass — sites with strong protection still block.
+const puppeteer = require('puppeteer-extra');
+const StealthPlugin = require('puppeteer-extra-plugin-stealth');
+puppeteer.use(StealthPlugin());
 const axios = require('axios');
 const config = require('../config');
 const getProxyManager = require('../utils/proxyManagerInstance');
@@ -200,15 +207,10 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
       }
     });
 
-    // Remove webdriver property to avoid detection
-    await page.evaluateOnNewDocument(() => {
-      Object.defineProperty(navigator, 'webdriver', {
-        get: () => undefined
-      });
-      delete window.chrome;
-      window.chrome = { runtime: {} };
-    });
-    
+    // navigator.webdriver, chrome.runtime, plugins, languages, WebGL vendor and
+    // other automation tells are handled by the stealth plugin registered at
+    // the top of this file — no manual (and easily-clobbered) patching here.
+
     // Set realistic viewport and user agent
     await page.setViewport({ width: 1920, height: 1080 });
     await page.setUserAgent(config.USER_AGENT);

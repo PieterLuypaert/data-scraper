@@ -125,6 +125,17 @@ export function Sidebar({
         {/* Fixed-width inner shell keeps content from squishing mid-animation */}
         <div className="relative flex h-full w-72 flex-col">
           <SidebarAmbient />
+          {/* Collapse control lives inside the header so it never overlaps the
+              main content area (was a tab protruding over the content edge). */}
+          <button
+            onClick={() => setSidebarCollapsed(true)}
+            aria-label="Sidebar inklappen"
+            title="Sidebar inklappen"
+            tabIndex={sidebarCollapsed ? -1 : 0}
+            className="absolute right-3 top-3 z-10 hidden rounded-lg p-2 text-gray-400 transition-colors hover:bg-white/70 hover:text-indigo-700 lg:flex"
+          >
+            <PanelLeftClose className="h-5 w-5" />
+          </button>
           <div className="relative px-6 pt-7 pb-5">
             <h1 className="mt-3 text-2xl font-extrabold tracking-tight text-gradient-brand">
               {t("app.title")}
@@ -139,22 +150,6 @@ export function Sidebar({
           <SidebarFooter />
         </div>
       </aside>
-
-      {/* Desktop collapse handle — sits on the sidebar's outer right edge (only when open) */}
-      <button
-        onClick={() => setSidebarCollapsed(true)}
-        aria-label="Sidebar inklappen"
-        title="Sidebar inklappen"
-        tabIndex={sidebarCollapsed ? -1 : 0}
-        className={cn(
-          "fixed top-1/2 z-40 hidden -translate-y-1/2 rounded-r-xl border border-l-0 border-indigo-500/60 bg-indigo-600 py-8 pl-2 pr-2.5 text-white shadow-soft backdrop-blur transition-all duration-300 ease-in-out hover:bg-indigo-700",
-          sidebarCollapsed
-            ? "left-0 opacity-0 lg:flex lg:pointer-events-none"
-            : "lg:left-72 opacity-100 lg:flex"
-        )}
-      >
-        <PanelLeftClose className="h-5 w-5" />
-      </button>
 
       {/* Desktop expand handle on the left edge (only when collapsed) */}
       <button

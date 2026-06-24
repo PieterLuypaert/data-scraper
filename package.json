@@ -34,6 +34,8 @@
     "lucide-react": "^0.553.0",
     "pdfkit": "^0.17.2",
     "puppeteer": "^24.30.0",
+    "puppeteer-extra": "^3.3.6",
+    "puppeteer-extra-plugin-stealth": "^2.11.2",
     "recharts": "^3.4.1",
     "tailwind-merge": "^3.4.0",
     "tailwindcss-animate": "^1.0.7"
