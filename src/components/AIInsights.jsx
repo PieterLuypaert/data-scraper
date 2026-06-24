@@ -15,16 +15,16 @@ import {
   Tag,
   TrendingUp,
   FileText,
-  AlertCircle,
   Loader2,
 } from "lucide-react";
 import { generateAIInsights } from "../utils/aiInsights";
+import { useToast } from "./ui/toast";
 import { t } from "../i18n";
 
 export function AIInsights({ data }) {
   const [insights, setInsights] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
+  const { toast } = useToast();
 
   useEffect(() => {
     if (data) {
@@ -36,7 +36,6 @@ export function AIInsights({ data }) {
     if (!data) return;
 
     setLoading(true);
-    setError(null);
 
     try {
       // Use frontend utility for now (can switch to API call)
@@ -44,7 +43,7 @@ export function AIInsights({ data }) {
       setInsights(result);
     } catch (err) {
       console.error("Error generating insights:", err);
-      setError("Failed to generate insights");
+      toast({ variant: "error", title: "Insights mislukt", description: "Kon geen insights genereren." });
     } finally {
       setLoading(false);
     }
@@ -74,22 +73,6 @@ export function AIInsights({ data }) {
               <span className="ml-3 text-gray-600">
                 {t("insights.generating")}
               </span>
-            </div>
-          </CardContent>
-        </Card>
-      </PageShell>
-    );
-  }
-
-  if (error) {
-    return (
-      <PageShell size="wide">
-        <PageHeader title={t("insights.title")} description={t("tooltips.insights")} />
-        <Card>
-          <CardContent>
-            <div className="flex items-center gap-2 text-red-600">
-              <AlertCircle className="h-5 w-5" />
-              <span>{error}</span>
             </div>
           </CardContent>
         </Card>

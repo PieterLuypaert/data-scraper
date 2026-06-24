@@ -11,8 +11,10 @@ import { AnalysisSections } from './results/AnalysisSections';
 import { MetaSections } from './results/MetaSections';
 import { ContentSections } from './results/ContentSections';
 import { RawJsonSection } from './results/RawJsonSection';
+import { useToast } from './ui/toast';
 
 export function ScrapeResultsExtended({ data, crawlData }) {
+  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -50,23 +52,25 @@ export function ScrapeResultsExtended({ data, crawlData }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Kopiëren mislukt', description: err.message });
     }
   };
 
   const handleExportJSON = () => {
     try {
       exportToJSON(data, `scrape-detailed-${Date.now()}`);
+      toast({ variant: 'success', title: 'Geëxporteerd', description: 'JSON-bestand gedownload' });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 
   const handleExportCSV = () => {
     try {
       exportToCSV(data, `scrape-detailed-${Date.now()}`);
+      toast({ variant: 'success', title: 'Geëxporteerd', description: 'CSV-bestand gedownload' });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 
@@ -78,8 +82,9 @@ export function ScrapeResultsExtended({ data, crawlData }) {
       } else {
         await exportToExcel(data, `scrape-detailed-${Date.now()}`);
       }
+      toast({ variant: 'success', title: 'Geëxporteerd', description: 'Excel-bestand gedownload' });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 
@@ -91,8 +96,9 @@ export function ScrapeResultsExtended({ data, crawlData }) {
       } else {
         await exportToPDF(data, `scrape-detailed-${Date.now()}`);
       }
+      toast({ variant: 'success', title: 'Geëxporteerd', description: 'PDF-bestand gedownload' });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 

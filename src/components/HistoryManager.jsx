@@ -12,11 +12,13 @@ import {
 import { batchExport } from '@/utils/export';
 import { Trash2, Download, X, CheckSquare, Square, Camera, History } from 'lucide-react';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 import { t } from '@/i18n';
 
 export function HistoryManager({ onSelectHistoryItem }) {
   const [history, setHistory] = useState([]);
   const [selectedItems, setSelectedItems] = useState([]);
+  const { toast } = useToast();
 
   useEffect(() => {
     loadHistory();
@@ -51,7 +53,7 @@ export function HistoryManager({ onSelectHistoryItem }) {
 
   const handleBulkDelete = () => {
     if (selectedItems.length === 0) {
-      alert('Selecteer eerst items om te verwijderen');
+      toast({ variant: 'info', title: 'Niets geselecteerd', description: 'Selecteer eerst items om te verwijderen' });
       return;
     }
     if (confirm(`Weet je zeker dat je ${selectedItems.length} item(s) wilt verwijderen?`)) {
@@ -71,7 +73,7 @@ export function HistoryManager({ onSelectHistoryItem }) {
 
   const handleExport = async (format) => {
     if (selectedItems.length === 0) {
-      alert('Selecteer eerst items om te exporteren');
+      toast({ variant: 'info', title: 'Niets geselecteerd', description: 'Selecteer eerst items om te exporteren' });
       return;
     }
     const itemsToExport = history.filter((item) =>
@@ -79,8 +81,9 @@ export function HistoryManager({ onSelectHistoryItem }) {
     );
     try {
       await batchExport(itemsToExport, format, `scrape-history-${Date.now()}`);
+      toast({ variant: 'success', title: 'Export gelukt', description: `${itemsToExport.length} item(s) geëxporteerd als ${format.toUpperCase()}` });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 

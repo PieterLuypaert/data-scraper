@@ -2,7 +2,6 @@ import { useState, useEffect } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Alert, AlertDescription } from './ui/alert';
 import {
   getProxyStats,
   checkProxyHealth,
@@ -23,13 +22,15 @@ import {
   TrendingUp,
 } from 'lucide-react';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 import { t } from '@/i18n';
 
 export function ProxyManager() {
   const [stats, setStats] = useState(null);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState(null);
-  const [success, setSuccess] = useState(null);
+  const { toast } = useToast();
+  const notifyError = (description) => toast({ variant: 'error', title: 'Fout', description });
+  const notifySuccess = (description) => toast({ variant: 'success', title: 'Gelukt', description });
   const [newProxy, setNewProxy] = useState({
     host: '',
     port: '',
@@ -46,11 +47,10 @@ export function ProxyManager() {
   const loadStats = async () => {
     try {
       setLoading(true);
-      setError(null);
       const data = await getProxyStats();
       setStats(data);
     } catch (err) {
-      setError(err.message);
+      notifyError(err.message);
     } finally {
       setLoading(false);
     }
@@ -59,13 +59,11 @@ export function ProxyManager() {
   const handleCheckHealth = async () => {
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
       const data = await checkProxyHealth();
-      setSuccess(`Health check complete: ${data.healthy}/${data.total} proxies healthy`);
+      notifySuccess(`Health check voltooid: ${data.healthy}/${data.total} proxies gezond`);
       await loadStats();
     } catch (err) {
-      setError(err.message);
+      notifyError(err.message);
     } finally {
       setLoading(false);
     }
@@ -74,13 +72,11 @@ export function ProxyManager() {
   const handleAddProxy = async () => {
     try {
       if (!newProxy.host || !newProxy.port) {
-        setError('Host en port zijn verplicht');
+        notifyError('Host en port zijn verplicht');
         return;
       }
 
       setLoading(true);
-      setError(null);
-      setSuccess(null);
 
       const proxy = {
         host: newProxy.host,
@@ -91,7 +87,7 @@ export function ProxyManager() {
       };
 
       await addProxy(proxy);
-      setSuccess('Proxy toegevoegd');
+      notifySuccess('Proxy toegevoegd');
       setNewProxy({
         host: '',
         port: '',
@@ -102,7 +98,7 @@ export function ProxyManager() {
       setShowAddForm(false);
       await loadStats();
     } catch (err) {
-      setError(err.message);
+      notifyError(err.message);
     } finally {
       setLoading(false);
     }
@@ -115,13 +111,11 @@ export function ProxyManager() {
 
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
       await removeProxy(proxyUrl);
-      setSuccess('Proxy verwijderd');
+      notifySuccess('Proxy verwijderd');
       await loadStats();
     } catch (err) {
-      setError(err.message);
+      notifyError(err.message);
     } finally {
       setLoading(false);
     }
@@ -134,13 +128,11 @@ export function ProxyManager() {
 
     try {
       setLoading(true);
-      setError(null);
-      setSuccess(null);
       await resetProxies();
-      setSuccess('Alle proxies gereset naar healthy status');
+      notifySuccess('Alle proxies gereset naar healthy status');
       await loadStats();
     } catch (err) {
-      setError(err.message);
+      notifyError(err.message);
     } finally {
       setLoading(false);
     }
@@ -178,19 +170,6 @@ export function ProxyManager() {
         actions={headerActions}
       />
     <div className="space-y-6">
-      {error && (
-        <Alert variant="destructive">
-          <AlertCircle className="h-4 w-4" />
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
-      {success && (
-        <Alert className="bg-green-50 border-green-200">
-          <CheckCircle className="h-4 w-4 text-green-600" />
-          <AlertDescription className="text-green-800">{success}</AlertDescription>
-        </Alert>
-      )}
-
       {/* Stats Overview */}
       {stats && (
         <Card>
@@ -260,13 +239,7 @@ export function ProxyManager() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => {
-                setShowAddForm(!showAddForm);
-                if (showAddForm) {
-                  setError(null);
-                  setSuccess(null);
-                }
-              }}
+              onClick={() => setShowAddForm(!showAddForm)}
             >
               {showAddForm ? 'Verbergen' : 'Nieuwe Proxy'}
             </Button>
@@ -364,7 +337,6 @@ export function ProxyManager() {
                       password: '',
                       protocol: 'http',
                     });
-                    setError(null);
                   }}
                 >
                   Annuleren

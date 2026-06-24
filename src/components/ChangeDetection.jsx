@@ -1,24 +1,23 @@
 import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
-import { Alert, AlertDescription } from './ui/alert';
 import { Plus, Minus, Edit, CheckCircle, XCircle } from 'lucide-react';
 import { compareScrapes, getChangeSummary } from '@/utils/changeDetection';
 import { getHistory } from '@/utils/storage';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 import { t } from '@/i18n';
 
 export function ChangeDetection() {
   const [oldScrapeId, setOldScrapeId] = useState('');
   const [newScrapeId, setNewScrapeId] = useState('');
   const [changes, setChanges] = useState(null);
-  const [error, setError] = useState('');
   const [loading, setLoading] = useState(false);
+  const { toast } = useToast();
 
   const history = getHistory();
 
   const handleCompare = () => {
-    setError('');
     setLoading(true);
 
     try {
@@ -26,7 +25,7 @@ export function ChangeDetection() {
       const newScrape = history.find(h => h.id === newScrapeId);
 
       if (!oldScrape || !newScrape) {
-        setError('Beide scrapes moeten geselecteerd zijn');
+        toast({ variant: 'error', title: 'Selectie onvolledig', description: 'Beide scrapes moeten geselecteerd zijn' });
         setLoading(false);
         return;
       }
@@ -34,7 +33,7 @@ export function ChangeDetection() {
       const comparison = compareScrapes(oldScrape.data, newScrape.data);
       setChanges(comparison);
     } catch (err) {
-      setError(err.message || 'Er is een fout opgetreden bij het vergelijken');
+      toast({ variant: 'error', title: 'Vergelijken mislukt', description: err.message || 'Er is een fout opgetreden bij het vergelijken' });
     } finally {
       setLoading(false);
     }
@@ -106,11 +105,6 @@ export function ChangeDetection() {
           <Button onClick={handleCompare} disabled={loading || !oldScrapeId || !newScrapeId}>
             {loading ? 'Vergelijken...' : 'Vergelijk'}
           </Button>
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
-          )}
         </CardContent>
       </Card>
 

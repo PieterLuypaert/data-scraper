@@ -2,20 +2,20 @@ import { useState, useRef, useEffect } from 'react';
 import { Card, CardContent } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Alert, AlertDescription } from './ui/alert';
 import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
 import { crawlWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { Loader2, Settings, Info, AlertTriangle } from 'lucide-react';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 import { t } from '@/i18n';
 
 export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [showOptions, setShowOptions] = useState(false);
+  const { toast, update, dismiss } = useToast();
   const [options, setOptions] = useState({
     maxPages: 50,
     maxDepth: 3,
@@ -31,15 +31,19 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
 
   const handleSubmit = async (e) => {
     e.preventDefault();
-    setError('');
 
     const validation = validateUrl(url);
     if (!validation.isValid) {
-      setError(validation.error);
+      toast({ variant: 'error', title: 'Ongeldige URL', description: validation.error });
       return;
     }
 
     setLoading(true);
+    const loadingId = toast({
+      variant: 'loading',
+      title: 'Bezig met crawlen…',
+      description: validation.normalizedUrl,
+    });
     try {
       const crawl = crawlWebsite(validation.normalizedUrl, options);
       pendingCrawl.current = crawl;
@@ -47,11 +51,17 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
 
       onCrawlSuccess(data);
       setUrl('');
+      update(loadingId, {
+        variant: 'success',
+        title: 'Crawl voltooid',
+        description: `${data?.totalPages ?? data?.pages?.length ?? 0} pagina's gecrawld`,
+      });
     } catch (err) {
       console.error('CrawlForm error:', err);
       const errorMessage = err.message || 'Er is een fout opgetreden';
-      setError(errorMessage);
       onCrawlError?.(errorMessage);
+      dismiss(loadingId);
+      toast({ variant: 'error', title: 'Crawlen mislukt', description: errorMessage });
     } finally {
       pendingCrawl.current = null;
       setLoading(false);
@@ -241,12 +251,6 @@ export function CrawlForm({ onCrawlSuccess, onCrawlError }) {
                 </label>
               </div>
             </div>
-          )}
-
-          {error && (
-            <Alert variant="destructive">
-              <AlertDescription>{error}</AlertDescription>
-            </Alert>
           )}
         </form>
         </div>

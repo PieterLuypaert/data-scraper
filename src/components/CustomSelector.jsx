@@ -2,12 +2,12 @@ import { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from './ui/card';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
-import { Alert, AlertDescription } from './ui/alert';
 import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
 import { Plus, Loader2, Code } from 'lucide-react';
 import { validateUrl } from '@/utils/validation';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 import { t } from '@/i18n';
 import { SELECTOR_TEMPLATES } from './customSelector/templates';
 import { SelectorRow } from './customSelector/SelectorRow';
@@ -17,9 +17,11 @@ export function CustomSelector({ onScrapeSuccess }) {
   const [url, setUrl] = useState('');
   const [selectors, setSelectors] = useState([]);
   const [loading, setLoading] = useState(false);
-  const [error, setError] = useState('');
   const [results, setResults] = useState(null);
   const [testingSelector, setTestingSelector] = useState(null);
+  const { toast, update, dismiss } = useToast();
+  const notifyError = (description, title = 'Fout') =>
+    toast({ variant: 'error', title, description });
 
   const addSelector = () => {
     setSelectors([...selectors, { name: '', selector: '', id: Date.now() }]);
@@ -45,13 +47,13 @@ export function CustomSelector({ onScrapeSuccess }) {
 
   const validateSelectors = () => {
     if (selectors.length === 0) {
-      setError('Voeg minimaal één selector toe');
+      notifyError('Voeg minimaal één selector toe');
       return false;
     }
 
     for (const sel of selectors) {
       if (!sel.selector.trim()) {
-        setError('Alle selectors moeten een CSS selector hebben');
+        notifyError('Alle selectors moeten een CSS selector hebben');
         return false;
       }
     }
@@ -61,18 +63,17 @@ export function CustomSelector({ onScrapeSuccess }) {
 
   const testSelector = async (selector) => {
     if (!url.trim()) {
-      setError('Voer eerst een URL in');
+      notifyError('Voer eerst een URL in');
       return;
     }
 
     const validation = validateUrl(url);
     if (!validation.isValid) {
-      setError(validation.error);
+      notifyError(validation.error, 'Ongeldige URL');
       return;
     }
 
     setTestingSelector(selector.id);
-    setError('');
 
     try {
       const response = await fetch('http://localhost:3001/api/scrape/custom', {
@@ -119,13 +120,13 @@ export function CustomSelector({ onScrapeSuccess }) {
       const result = data.data[selector.name || 'Test'] || data.data[selector.selector];
       
       if (result && result.error) {
-        setError(`Selector fout: ${result.error}`);
+        notifyError(`Selector fout: ${result.error}`);
         updateSelector(selector.id, 'testResult', {
           success: false,
           error: result.error
         });
       } else if (Array.isArray(result) && result.length === 0) {
-        setError('Geen elementen gevonden met deze selector');
+        notifyError('Geen elementen gevonden met deze selector');
         updateSelector(selector.id, 'testResult', {
           success: false,
           error: 'Geen elementen gevonden'
@@ -136,15 +137,15 @@ export function CustomSelector({ onScrapeSuccess }) {
           success: true,
           count: result.length
         });
-        setError(''); // Clear error on success
+        toast({ variant: 'success', title: 'Selector werkt', description: `${result.length} element(en) gevonden` });
       } else {
         throw new Error('Onverwacht resultaat formaat');
       }
     } catch (err) {
       if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        setError('Kan niet verbinden met de server. Zorg ervoor dat de backend server draait op poort 3001.');
+        notifyError('Kan niet verbinden met de server. Zorg ervoor dat de backend server draait op poort 3001.', 'Geen verbinding');
       } else {
-        setError(err.message || 'Test mislukt');
+        notifyError(err.message || 'Test mislukt', 'Test mislukt');
       }
       updateSelector(selector.id, 'testResult', {
         success: false,
@@ -156,12 +157,11 @@ export function CustomSelector({ onScrapeSuccess }) {
   };
 
   const handleScrape = async () => {
-    setError('');
     setResults(null);
 
     const validation = validateUrl(url);
     if (!validation.isValid) {
-      setError(validation.error);
+      notifyError(validation.error, 'Ongeldige URL');
       return;
     }
 
@@ -170,6 +170,11 @@ export function CustomSelector({ onScrapeSuccess }) {
     }
 
     setLoading(true);
+    const loadingId = toast({
+      variant: 'loading',
+      title: 'Bezig met scrapen…',
+      description: validation.normalizedUrl,
+    });
 
     try {
       const response = await fetch('http://localhost:3001/api/scrape/custom', {
@@ -225,11 +230,17 @@ export function CustomSelector({ onScrapeSuccess }) {
         timestamp: new Date().toISOString()
       };
       onScrapeSuccess?.(transformedData, validation.normalizedUrl);
+      update(loadingId, {
+        variant: 'success',
+        title: 'Scrape voltooid',
+        description: `Data opgehaald van ${validation.normalizedUrl}`,
+      });
     } catch (err) {
+      dismiss(loadingId);
       if (err.message.includes('Failed to fetch') || err.message.includes('NetworkError')) {
-        setError('Kan niet verbinden met de server. Zorg ervoor dat de backend server draait op poort 3001.');
+        notifyError('Kan niet verbinden met de server. Zorg ervoor dat de backend server draait op poort 3001.', 'Geen verbinding');
       } else {
-        setError(err.message || 'Er is een fout opgetreden');
+        notifyError(err.message || 'Er is een fout opgetreden', 'Scrapen mislukt');
       }
     } finally {
       setLoading(false);
@@ -334,13 +345,6 @@ export function CustomSelector({ onScrapeSuccess }) {
           )}
         </CardContent>
       </Card>
-
-      {/* Error Display */}
-      {error && (
-        <Alert variant="destructive">
-          <AlertDescription>{error}</AlertDescription>
-        </Alert>
-      )}
 
       {/* Scrape Button */}
       <div className="flex justify-end">

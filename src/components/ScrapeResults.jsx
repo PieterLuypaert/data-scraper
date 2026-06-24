@@ -6,8 +6,10 @@ import { copyToClipboard } from '@/utils/clipboard';
 import { highlightSafe } from '@/lib/utils';
 import { exportToJSON, exportToCSV, exportLinksToCSV, exportImagesToCSV } from '@/utils/export';
 import { SearchAndFilter } from './SearchAndFilter';
+import { useToast } from './ui/toast';
 
 export function ScrapeResults({ data }) {
+  const { toast } = useToast();
   const [copied, setCopied] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState({
@@ -131,23 +133,25 @@ export function ScrapeResults({ data }) {
       setCopied(true);
       setTimeout(() => setCopied(false), 2000);
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Kopiëren mislukt', description: err.message });
     }
   };
 
   const handleExportJSON = () => {
     try {
       exportToJSON(sortedData, `scrape-${Date.now()}`);
+      toast({ variant: 'success', title: 'Geëxporteerd', description: 'JSON-bestand gedownload' });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 
   const handleExportCSV = () => {
     try {
       exportToCSV(sortedData, `scrape-${Date.now()}`);
+      toast({ variant: 'success', title: 'Geëxporteerd', description: 'CSV-bestand gedownload' });
     } catch (err) {
-      alert(err.message);
+      toast({ variant: 'error', title: 'Export mislukt', description: err.message });
     }
   };
 
@@ -155,11 +159,12 @@ export function ScrapeResults({ data }) {
     if (sortedData.links && sortedData.links.length > 0) {
       try {
         exportLinksToCSV(sortedData.links, `links-${Date.now()}`);
+        toast({ variant: 'success', title: 'Geëxporteerd', description: `${sortedData.links.length} links gedownload` });
       } catch (err) {
-        alert(err.message);
+        toast({ variant: 'error', title: 'Export mislukt', description: err.message });
       }
     } else {
-      alert('Geen links om te exporteren');
+      toast({ variant: 'info', title: 'Niets te exporteren', description: 'Geen links om te exporteren' });
     }
   };
 
@@ -167,11 +172,12 @@ export function ScrapeResults({ data }) {
     if (sortedData.images && sortedData.images.length > 0) {
       try {
         exportImagesToCSV(sortedData.images, `images-${Date.now()}`);
+        toast({ variant: 'success', title: 'Geëxporteerd', description: `${sortedData.images.length} afbeeldingen gedownload` });
       } catch (err) {
-        alert(err.message);
+        toast({ variant: 'error', title: 'Export mislukt', description: err.message });
       }
     } else {
-      alert('Geen afbeeldingen om te exporteren');
+      toast({ variant: 'info', title: 'Niets te exporteren', description: 'Geen afbeeldingen om te exporteren' });
     }
   };
 

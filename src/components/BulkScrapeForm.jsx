@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { Button } from './ui/button';
 import { Input } from './ui/input';
 import { Card, CardContent } from './ui/card';
-import { Alert, AlertDescription } from './ui/alert';
 import { Tooltip, InfoBadge } from './ui/tooltip';
 import { HelpText } from './ui/help-text';
 import { scrapeWebsite } from '@/api/scraper';
@@ -10,6 +9,7 @@ import { validateUrl } from '@/utils/validation';
 import { Loader2, Plus, X, CheckCircle2, XCircle } from 'lucide-react';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
 import { PageShell, PageHeader } from './ui/page-shell';
+import { useToast } from './ui/toast';
 import { t } from '@/i18n';
 
 export function BulkScrapeForm({ onScrapeComplete }) {
@@ -17,6 +17,7 @@ export function BulkScrapeForm({ onScrapeComplete }) {
   const [loading, setLoading] = useState(false);
   const [results, setResults] = useState([]);
   const [progress, setProgress] = useState({ current: 0, total: 0 });
+  const { toast } = useToast();
 
   const addUrlField = () => {
     setUrls([...urls, '']);
@@ -50,12 +51,12 @@ export function BulkScrapeForm({ onScrapeComplete }) {
     });
 
     if (validUrls.length === 0) {
-      alert('Voer minimaal één geldige URL in');
+      toast({ variant: 'error', title: 'Geen geldige URL', description: 'Voer minimaal één geldige URL in' });
       return;
     }
 
     if (invalidIndices.length > 0) {
-      alert(`Sommige URLs zijn ongeldig. Controleer de ingevoerde URLs.`);
+      toast({ variant: 'info', title: 'Sommige URLs overgeslagen', description: 'Een of meer URLs zijn ongeldig en worden niet gescraped.' });
     }
 
     setLoading(true);
@@ -101,6 +102,14 @@ export function BulkScrapeForm({ onScrapeComplete }) {
     setResults(scrapeResults);
     setLoading(false);
     onScrapeComplete?.(scrapeResults);
+
+    const okCount = scrapeResults.filter((r) => r.success).length;
+    const failCount = scrapeResults.length - okCount;
+    toast({
+      variant: failCount === 0 ? 'success' : 'info',
+      title: 'Bulk scrape voltooid',
+      description: `${okCount} geslaagd${failCount ? `, ${failCount} mislukt` : ''} van ${scrapeResults.length}`,
+    });
   };
 
   return (
