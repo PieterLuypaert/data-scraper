@@ -4,13 +4,14 @@ const { extractAllData } = require('../scrapers/dataExtractors');
 const { needsPuppeteer, mapScrapingError } = require('../utils/helpers');
 const { assertSafeUrl } = require('../utils/ssrfGuard');
 const { sendError } = require('../utils/errorResponse');
+const { isAllowed } = require('../utils/robots');
 const config = require('../config');
 
 /**
  * Main scrape route handler
  */
 async function handleScrape(req, res) {
-  const { url, forcePuppeteer } = req.body;
+  const { url, forcePuppeteer, ignoreRobots } = req.body;
 
   if (!url) {
     return res.status(400).json({ error: 'URL is required' });
@@ -29,6 +30,23 @@ async function handleScrape(req, res) {
     await assertSafeUrl(url);
   } catch (error) {
     return res.status(400).json({ error: error.message });
+  }
+
+  // Respect robots.txt unless the user explicitly overrides it. Fails open
+  // (allows) when robots.txt is missing or unreachable.
+  if (!ignoreRobots) {
+    try {
+      const { allowed, rule } = await isAllowed(url);
+      if (!allowed) {
+        return res.status(403).json({
+          success: false,
+          error: `Deze pagina wordt door de robots.txt van de site uitgesloten van scrapen${rule ? ` (regel: Disallow: ${rule})` : ''}. Vink "Negeer robots.txt" aan om dit bewust te overschrijven.`,
+          robotsBlocked: true,
+        });
+      }
+    } catch {
+      // Robots check itself failed — don't block scraping on that.
+    }
   }
 
   try {

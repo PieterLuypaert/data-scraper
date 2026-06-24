@@ -73,21 +73,26 @@ export async function resetProxies() {
  * Scrapes a website and returns the data
  * @param {string} url - The URL to scrape
  * @param {boolean} forcePuppeteer - Force use of Puppeteer for screenshots
+ * @param {Object} [options]
+ * @param {boolean} [options.ignoreRobots] - Override robots.txt restrictions
+ * @param {AbortSignal} [options.signal] - Signal to cancel the request
  * @returns {Promise<Object>} The scraped data
  */
-export async function scrapeWebsite(url, forcePuppeteer = false) {
+export async function scrapeWebsite(url, forcePuppeteer = false, options = {}) {
+  const { ignoreRobots = false, signal } = options;
   try {
     const response = await fetch(`${API_BASE_URL}/scrape`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({ url, forcePuppeteer }),
+      body: JSON.stringify({ url, forcePuppeteer, ignoreRobots }),
+      signal,
     });
 
     const responseText = await response.text();
     let data;
-    
+
     try {
       data = JSON.parse(responseText);
     } catch (e) {
@@ -99,7 +104,9 @@ export async function scrapeWebsite(url, forcePuppeteer = false) {
       // Use the detailed error message from the server
       const errorMessage = data.error || data.message || `Server error: ${response.status} ${response.statusText}`;
       console.error('Server error response:', data);
-      throw new Error(errorMessage);
+      const err = new Error(errorMessage);
+      err.robotsBlocked = !!data.robotsBlocked;
+      throw err;
     }
 
     if (!data.success) {
@@ -110,6 +117,12 @@ export async function scrapeWebsite(url, forcePuppeteer = false) {
 
     return data.data;
   } catch (error) {
+    // Cancellation is not an error to report — re-throw a tagged error.
+    if (error.name === 'AbortError') {
+      const aborted = new Error('Scrape geannuleerd');
+      aborted.aborted = true;
+      throw aborted;
+    }
     console.error('Scraping error:', error);
     if (error.message.includes('Failed to fetch') || error.message.includes('NetworkError')) {
       throw new Error('Kan niet verbinden met de server. Zorg ervoor dat de backend server draait op poort 3001.');

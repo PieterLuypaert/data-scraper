@@ -1,11 +1,8 @@
-// puppeteer-extra wraps the installed puppeteer and lets us register plugins.
-// The stealth plugin patches the most common headless/automation fingerprints
-// (navigator.webdriver, missing plugins, chrome.runtime, WebGL vendor, etc.)
-// so ordinary sites that only do basic bot-checks accept the request. It is
-// NOT a Cloudflare/CAPTCHA bypass — sites with strong protection still block.
-const puppeteer = require('puppeteer-extra');
-const StealthPlugin = require('puppeteer-extra-plugin-stealth');
-puppeteer.use(StealthPlugin());
+// puppeteer-extra + stealth and the reusable browser pool live in browserManager.
+// Stealth patches the most common headless/automation fingerprints so ordinary
+// sites that only do basic bot-checks accept the request. It is NOT a
+// Cloudflare/CAPTCHA bypass — sites with strong protection still block.
+const { puppeteer, getSharedBrowser } = require('./browserManager');
 const axios = require('axios');
 const config = require('../config');
 const getProxyManager = require('../utils/proxyManagerInstance');
@@ -144,39 +141,43 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
   const proxyManager = getProxyManager();
   console.log(`Using Puppeteer for ${new URL(url).hostname} - URL: ${url}`);
   let browser;
+  let page;
+  let usingSharedBrowser = false;
   let selectedProxy = proxy;
   let retries = 0;
   const maxRetries = proxyManager && config.PROXY.enabled && config.PROXY.failoverEnabled ? 3 : 0;
-  
+
   while (retries <= maxRetries) {
     try {
       // Get proxy if enabled and not provided
       if (!selectedProxy && proxyManager && config.PROXY.enabled && proxyManager.proxies.length > 0) {
         selectedProxy = proxyManager.getNextProxy();
       }
-      
-      console.log('Launching Puppeteer browser...');
-      const launchOptions = {
-        headless: true,
-        ...config.PUPPETEER
-      };
-      
-      // Add proxy configuration if available
-      if (selectedProxy && proxyManager) {
+
+      // Proxy scrapes need a dedicated browser (the --proxy-server arg is set at
+      // launch and differs per proxy); everything else reuses the shared pool.
+      const useProxy = !!(selectedProxy && proxyManager && proxyManager.getPuppeteerProxyConfig(selectedProxy)?.proxy);
+
+      if (useProxy) {
         const proxyConfig = proxyManager.getPuppeteerProxyConfig(selectedProxy);
-        if (proxyConfig.proxy) {
-          launchOptions.args = [
-            ...(launchOptions.args || []),
-            `--proxy-server=${proxyConfig.proxy.server}`
-          ];
-          console.log(`Using proxy: ${proxyConfig.proxy.server}`);
-        }
+        const launchOptions = {
+          headless: true,
+          ...config.PUPPETEER,
+          args: [
+            ...((config.PUPPETEER && config.PUPPETEER.args) || []),
+            `--proxy-server=${proxyConfig.proxy.server}`,
+          ],
+        };
+        console.log(`Launching dedicated Puppeteer browser (proxy ${proxyConfig.proxy.server})...`);
+        browser = await puppeteer.launch(launchOptions);
+        usingSharedBrowser = false;
+      } else {
+        browser = await getSharedBrowser();
+        usingSharedBrowser = true;
       }
-      
-      browser = await puppeteer.launch(launchOptions);
-      
-      console.log('Browser launched, creating new page...');
-      const page = await browser.newPage();
+
+      console.log('Creating new page...');
+      page = await browser.newPage();
       
       // Authenticate proxy if credentials are provided
       if (selectedProxy && proxyManager) {
@@ -355,9 +356,16 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
       }
     }
     
-    await browser.close();
-    console.log('Browser closed successfully');
-    
+    // Always close the page; only close the browser when it's a dedicated
+    // (proxy) instance — the shared pool browser stays alive for reuse.
+    try { await page.close(); } catch { /* page already gone */ }
+    if (!usingSharedBrowser) {
+      await browser.close();
+      console.log('Dedicated browser closed');
+    } else {
+      console.log('Page closed, shared browser kept alive');
+    }
+
     // Mark proxy as successful
     if (selectedProxy && proxyManager) {
       proxyManager.markProxySuccess(selectedProxy);
@@ -375,8 +383,13 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
         proxyManager.markProxyFailed(selectedProxy);
       }
       
-      // Close browser if still open
-      if (browser) {
+      // Clean up the page; only close the browser if it was a dedicated
+      // (proxy) instance. The shared browser is left for the next request.
+      if (page) {
+        try { await page.close(); } catch { /* already gone */ }
+        page = undefined;
+      }
+      if (browser && !usingSharedBrowser) {
         try {
           await browser.close();
         } catch (closeError) {

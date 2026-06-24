@@ -151,6 +151,17 @@ function ToastItem({ toast, onDismiss }) {
             {toast.description}
           </p>
         )}
+        {toast.action && (
+          <button
+            onClick={() => {
+              toast.action.onClick?.();
+              close();
+            }}
+            className="mt-2 rounded-lg border border-indigo-200 bg-white/70 px-2.5 py-1 text-xs font-semibold text-indigo-700 transition-colors hover:bg-indigo-50"
+          >
+            {toast.action.label}
+          </button>
+        )}
       </div>
       <button
         onClick={close}

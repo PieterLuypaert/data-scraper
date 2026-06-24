@@ -27,6 +27,7 @@ const {
   exportCrawlToPDF,
 } = require("./server/routes/export");
 const { generateInsights } = require("./server/routes/insights");
+const { closeSharedBrowser } = require("./server/scrapers/browserManager");
 
 const app = express();
 const PORT = config.PORT;
@@ -137,3 +138,18 @@ server.on("error", (error) => {
     throw error;
   }
 });
+
+// Graceful shutdown: close the shared Puppeteer browser so Chromium doesn't
+// linger after the process exits.
+let shuttingDown = false;
+async function shutdown(signal) {
+  if (shuttingDown) return;
+  shuttingDown = true;
+  console.log(`\n${signal} received, shutting down...`);
+  await closeSharedBrowser();
+  server.close(() => process.exit(0));
+  // Force-exit if connections don't drain in time.
+  setTimeout(() => process.exit(0), 5000).unref();
+}
+process.on("SIGINT", () => shutdown("SIGINT"));
+process.on("SIGTERM", () => shutdown("SIGTERM"));

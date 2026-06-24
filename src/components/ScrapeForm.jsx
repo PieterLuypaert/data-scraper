@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { InfoBadge } from './ui/tooltip';
 import { scrapeWebsite } from '@/api/scraper';
 import { validateUrl } from '@/utils/validation';
 import { saveToHistory, updateAnalytics } from '@/utils/storage';
-import { Loader2, Camera, HelpCircle, ChevronDown, Globe, ArrowRight } from 'lucide-react';
+import { Loader2, Camera, HelpCircle, ChevronDown, Globe, ArrowRight, ShieldOff } from 'lucide-react';
 import { PageShell, PageHeader } from './ui/page-shell';
 import { useToast } from './ui/toast';
 
@@ -12,8 +12,10 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError, compact = false }) 
   const [url, setUrl] = useState('');
   const [loading, setLoading] = useState(false);
   const [forcePuppeteer, setForcePuppeteer] = useState(false);
+  const [ignoreRobots, setIgnoreRobots] = useState(false);
   const [helpOpen, setHelpOpen] = useState(false);
   const { toast, update, dismiss } = useToast();
+  const abortRef = useRef(null);
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -25,13 +27,19 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError, compact = false }) 
     }
 
     setLoading(true);
+    const controller = new AbortController();
+    abortRef.current = controller;
     const loadingId = toast({
       variant: 'loading',
       title: 'Bezig met scrapen…',
       description: validation.normalizedUrl,
+      action: { label: 'Annuleren', onClick: () => controller.abort() },
     });
     try {
-      const data = await scrapeWebsite(validation.normalizedUrl, forcePuppeteer);
+      const data = await scrapeWebsite(validation.normalizedUrl, forcePuppeteer, {
+        ignoreRobots,
+        signal: controller.signal,
+      });
 
       // Save to history and update analytics
       saveToHistory(data, validation.normalizedUrl);
@@ -46,13 +54,22 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError, compact = false }) 
         description: `Data opgehaald van ${validation.normalizedUrl}`,
       });
     } catch (err) {
+      dismiss(loadingId);
+      if (err.aborted) {
+        toast({ variant: 'info', title: 'Geannuleerd', description: 'De scrape is gestopt.' });
+        return;
+      }
       console.error('ScrapeForm error:', err);
       const errorMessage = err.message || 'Er is een fout opgetreden';
       updateAnalytics(false, validation.normalizedUrl);
       onScrapeError?.(errorMessage);
-      dismiss(loadingId);
-      toast({ variant: 'error', title: 'Scrapen mislukt', description: errorMessage });
+      toast({
+        variant: 'error',
+        title: err.robotsBlocked ? 'Geblokkeerd door robots.txt' : 'Scrapen mislukt',
+        description: errorMessage,
+      });
     } finally {
+      abortRef.current = null;
       setLoading(false);
     }
   };
@@ -131,6 +148,19 @@ export function ScrapeForm({ onScrapeSuccess, onScrapeError, compact = false }) 
             <Camera className="h-4 w-4" />
             <span>Altijd screenshot maken</span>
             <InfoBadge tooltip="Gebruikt Puppeteer (headless browser) voor JavaScript-heavy sites. Langzamer maar geeft screenshots en werkt met dynamische content." />
+          </label>
+
+          <label className="flex cursor-pointer items-center gap-2 text-sm text-gray-600 hover:text-gray-900">
+            <input
+              type="checkbox"
+              checked={ignoreRobots}
+              onChange={(e) => setIgnoreRobots(e.target.checked)}
+              disabled={loading}
+              className="rounded accent-indigo-600"
+            />
+            <ShieldOff className="h-4 w-4" />
+            <span>Negeer robots.txt</span>
+            <InfoBadge tooltip="Standaard respecteert de scraper de robots.txt van de site. Vink dit aan om die regels bewust te negeren — doe dit alleen als je toestemming hebt." />
           </label>
 
           <button
