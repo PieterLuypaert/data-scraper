@@ -74,7 +74,12 @@ export function ToastProvider({ children }) {
 function Toaster({ toasts, onDismiss }) {
   if (typeof document === "undefined") return null;
   return createPortal(
-    <div className="pointer-events-none fixed top-4 right-4 z-[100] flex w-full max-w-sm flex-col gap-3 sm:top-6 sm:right-6">
+    <div
+      role="status"
+      aria-live="polite"
+      aria-atomic="false"
+      className="pointer-events-none fixed top-4 right-4 z-[100] flex w-full max-w-sm flex-col gap-3 sm:top-6 sm:right-6"
+    >
       {toasts.map((t) => (
         <ToastItem key={t.id} toast={t} onDismiss={onDismiss} />
       ))}
@@ -109,26 +114,35 @@ const VARIANTS = {
 function ToastItem({ toast, onDismiss }) {
   const [leaving, setLeaving] = useState(false);
   const timerRef = useRef();
+  const exitTimerRef = useRef();
   const variant = VARIANTS[toast.variant] || VARIANTS.info;
   const { Icon } = variant;
 
   const close = useCallback(() => {
     setLeaving(true);
-    setTimeout(() => onDismiss(toast.id), 200);
+    // Track the exit-animation timer so it is cleared on unmount (prevents a
+    // stray dismiss firing after the component is gone, esp. in StrictMode).
+    exitTimerRef.current = setTimeout(() => onDismiss(toast.id), 200);
   }, [onDismiss, toast.id]);
 
   useEffect(() => {
-    if (toast.duration === Infinity) return;
-    timerRef.current = setTimeout(close, toast.duration);
-    return () => clearTimeout(timerRef.current);
+    if (toast.duration !== Infinity) {
+      timerRef.current = setTimeout(close, toast.duration);
+    }
+    return () => {
+      clearTimeout(timerRef.current);
+      clearTimeout(exitTimerRef.current);
+    };
   }, [toast.duration, close]);
 
   return (
     <div
-      role="status"
-      aria-live="polite"
+      // Errors get an assertive alert role; the container is the polite live
+      // region for the rest (see Toaster), so non-error items need no role here.
+      role={toast.variant === 'error' ? 'alert' : undefined}
       onMouseEnter={() => clearTimeout(timerRef.current)}
       onMouseLeave={() => {
+        clearTimeout(timerRef.current);
         if (toast.duration !== Infinity) timerRef.current = setTimeout(close, 2000);
       }}
       className={cn(

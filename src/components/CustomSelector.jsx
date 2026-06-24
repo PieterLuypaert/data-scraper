@@ -76,7 +76,7 @@ export function CustomSelector({ onScrapeSuccess }) {
     setTestingSelector(selector.id);
 
     try {
-      const response = await fetch('http://localhost:3001/api/scrape/custom', {
+      const response = await fetch('/api/scrape/custom', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
@@ -177,7 +177,7 @@ export function CustomSelector({ onScrapeSuccess }) {
     });
 
     try {
-      const response = await fetch('http://localhost:3001/api/scrape/custom', {
+      const response = await fetch('/api/scrape/custom', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

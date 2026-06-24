@@ -3,8 +3,11 @@ const { safeLookup } = require('./ssrfGuard');
 const config = require('../config');
 
 // Per-origin robots.txt cache. Fetching robots.txt on every scrape would be
-// wasteful, so we keep parsed rules for a while.
+// wasteful, so we keep parsed rules for a while. Bounded so a flood of unique
+// origins can't grow the Map without limit (oldest entry evicted, FIFO).
 const CACHE_TTL_MS = 60 * 60 * 1000; // 1 hour
+const MAX_CACHE_ENTRIES = 500;
+const MAX_ROBOTS_BYTES = 1024 * 1024; // 1 MB — don't buffer huge robots.txt files
 const cache = new Map();
 
 /**
@@ -13,9 +16,12 @@ const cache = new Map();
  */
 function patternToRegex(pattern) {
   let re = '';
-  for (const ch of pattern) {
+  for (let i = 0; i < pattern.length; i++) {
+    const ch = pattern[i];
     if (ch === '*') re += '.*';
-    else if (ch === '$') re += '$';
+    // `$` is an end-of-URL anchor only as the final character; elsewhere it is
+    // a literal and must be escaped so it can't create an unintended anchor.
+    else if (ch === '$') re += i === pattern.length - 1 ? '$' : '\\$';
     else re += ch.replace(/[.+?^${}()|[\]\\]/g, '\\$&');
   }
   return new RegExp('^' + re);
@@ -83,6 +89,7 @@ async function fetchRules(origin) {
       maxRedirects: 3,
       // 4xx/5xx shouldn't throw — a missing robots.txt means "allow all".
       validateStatus: (s) => s >= 200 && s < 500,
+      maxContentLength: MAX_ROBOTS_BYTES,
       headers: { 'User-Agent': config.USER_AGENT },
       responseType: 'text',
     });
@@ -90,10 +97,15 @@ async function fetchRules(origin) {
       rules = rulesForAgent(parseRobots(res.data));
     }
   } catch {
-    // Network error / no robots.txt → treat as allowed.
+    // Network error / no robots.txt / oversized file → treat as allowed.
     rules = [];
   }
 
+  // Bound the cache: evict the oldest entry once we exceed the cap.
+  if (!cache.has(origin) && cache.size >= MAX_CACHE_ENTRIES) {
+    const oldestKey = cache.keys().next().value;
+    if (oldestKey !== undefined) cache.delete(oldestKey);
+  }
   cache.set(origin, { rules, fetchedAt: Date.now() });
   return rules;
 }

@@ -141,6 +141,7 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
   const proxyManager = getProxyManager();
   console.log(`Using Puppeteer for ${new URL(url).hostname} - URL: ${url}`);
   let browser;
+  let context;
   let page;
   let usingSharedBrowser = false;
   let selectedProxy = proxy;
@@ -149,6 +150,13 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
 
   while (retries <= maxRetries) {
     try {
+      // Reset per-attempt handles so a previous (failed) attempt can never leak
+      // a dedicated browser or be mistaken for the shared one in cleanup below.
+      browser = undefined;
+      context = undefined;
+      page = undefined;
+      usingSharedBrowser = false;
+
       // Get proxy if enabled and not provided
       if (!selectedProxy && proxyManager && config.PROXY.enabled && proxyManager.proxies.length > 0) {
         selectedProxy = proxyManager.getNextProxy();
@@ -176,9 +184,12 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
         usingSharedBrowser = true;
       }
 
-      console.log('Creating new page...');
-      page = await browser.newPage();
-      
+      // Isolate every scrape in its own browser context so cookies/localStorage
+      // never leak between requests sharing the pooled browser.
+      console.log('Creating isolated browser context...');
+      context = await browser.createBrowserContext();
+      page = await context.newPage();
+
       // Authenticate proxy if credentials are provided
       if (selectedProxy && proxyManager) {
         const proxyConfig = proxyManager.getPuppeteerProxyConfig(selectedProxy);
@@ -190,22 +201,28 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
           console.log('Proxy authentication configured');
         }
       }
-    
+
     // SSRF protection: validate every main-frame navigation (including
     // server-side redirects and meta-refresh / JS navigations) against the
     // blocklist and abort connections to private/internal hosts. Sub-resource
     // and cross-frame requests are passed through untouched.
+    //
+    // The listener is intentionally synchronous: an `async` handler whose
+    // returned promise rejects becomes an unhandled rejection (can crash Node
+    // ≥18), so the async work is wrapped and its rejection swallowed.
     await page.setRequestInterception(true);
-    page.on('request', async (request) => {
-      try {
-        if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
-          await assertSafeUrl(request.url());
+    page.on('request', (request) => {
+      (async () => {
+        try {
+          if (request.isNavigationRequest() && request.frame() === page.mainFrame()) {
+            await assertSafeUrl(request.url());
+          }
+          await request.continue();
+        } catch (err) {
+          console.log(`Aborting unsafe navigation: ${request.url()} (${err.message})`);
+          try { await request.abort('blockedbyclient'); } catch (_) { /* already handled */ }
         }
-        await request.continue();
-      } catch (err) {
-        console.log(`Aborting unsafe navigation: ${request.url()} (${err.message})`);
-        try { await request.abort('blockedbyclient'); } catch (_) { /* already handled */ }
-      }
+      })().catch(() => { /* never let a request-handler rejection bubble up */ });
     });
 
     // navigator.webdriver, chrome.runtime, plugins, languages, WebGL vendor and
@@ -356,14 +373,16 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
       }
     }
     
-    // Always close the page; only close the browser when it's a dedicated
-    // (proxy) instance — the shared pool browser stays alive for reuse.
+    // Close the isolated context (disposes its pages, cookies, storage). Only
+    // close the browser when it's a dedicated (proxy) instance — the shared
+    // pool browser stays alive for reuse.
     try { await page.close(); } catch { /* page already gone */ }
+    try { await context.close(); } catch { /* context already gone */ }
     if (!usingSharedBrowser) {
       await browser.close();
       console.log('Dedicated browser closed');
     } else {
-      console.log('Page closed, shared browser kept alive');
+      console.log('Context closed, shared browser kept alive');
     }
 
     // Mark proxy as successful
@@ -383,11 +402,15 @@ async function scrapeWithPuppeteer(url, forceScreenshot = false, proxy = null) {
         proxyManager.markProxyFailed(selectedProxy);
       }
       
-      // Clean up the page; only close the browser if it was a dedicated
-      // (proxy) instance. The shared browser is left for the next request.
+      // Clean up the page + isolated context; only close the browser if it was
+      // a dedicated (proxy) instance. The shared browser is left for reuse.
       if (page) {
         try { await page.close(); } catch { /* already gone */ }
         page = undefined;
+      }
+      if (context) {
+        try { await context.close(); } catch { /* already gone */ }
+        context = undefined;
       }
       if (browser && !usingSharedBrowser) {
         try {

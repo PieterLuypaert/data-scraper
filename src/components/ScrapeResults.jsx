@@ -21,8 +21,6 @@ export function ScrapeResults({ data }) {
   });
   const [sortBy, setSortBy] = useState('none');
 
-  if (!data) return null;
-
   // Search function
   const matchesSearch = (text) => {
     if (!searchQuery) return true;
@@ -32,6 +30,7 @@ export function ScrapeResults({ data }) {
 
   // Filter and search data
   const filteredData = useMemo(() => {
+    if (!data) return {};
     let result = { ...data };
 
     // Filter links
@@ -80,13 +79,11 @@ export function ScrapeResults({ data }) {
       result.metaTags = {};
     }
 
-    // Filter text preview
+    // Filter text preview. Highlighting is done safely at render time via
+    // highlightText() -> highlightSafe(), so we don't pre-inject <mark> here
+    // (the old raw RegExp also crashed on special characters in the query).
     if (!filters.showText) {
       result.textPreview = '';
-    } else if (searchQuery && data.textPreview) {
-      // Highlight search results in text
-      const regex = new RegExp(`(${searchQuery})`, 'gi');
-      result.textPreview = data.textPreview.replace(regex, '<mark>$1</mark>');
     }
 
     return result;
@@ -126,6 +123,10 @@ export function ScrapeResults({ data }) {
 
     return result;
   }, [filteredData, sortBy]);
+
+  // Guard placed AFTER all hooks so the hook call order is unconditional
+  // (moving it earlier would violate the rules of hooks).
+  if (!data) return null;
 
   const handleCopy = async () => {
     try {

@@ -1,6 +1,9 @@
 module.exports = {
   PORT: process.env.PORT || 3001,
-  
+
+  // User-agent token used to match groups in robots.txt (see utils/robots.js).
+  ROBOTS_USER_AGENT: process.env.ROBOTS_USER_AGENT || 'datascraper',
+
   // Sites that typically require JavaScript rendering
   JS_HEAVY_SITES: ['bol.com', 'amazon', 'coolblue', 'mediamarkt', 'wehkamp', 'zalando'],
   
@@ -26,9 +29,10 @@ module.exports = {
       // browser's same-origin / site-isolation protections with no scraping
       // benefit (we only read the rendered DOM).
     ],
-    // Kept true so sites with invalid/self-signed certificates can still be
-    // scraped; disabling this would break legitimate functionality.
-    ignoreHTTPSErrors: true,
+    // Default true so sites with invalid/self-signed certificates can still be
+    // scraped (legitimate use-case). Set PUPPETEER_IGNORE_HTTPS_ERRORS=false to
+    // enforce certificate validation (more secure, but breaks such sites).
+    ignoreHTTPSErrors: process.env.PUPPETEER_IGNORE_HTTPS_ERRORS !== 'false',
     timeout: 60000
   },
   
