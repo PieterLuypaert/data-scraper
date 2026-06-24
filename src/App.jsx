@@ -1,5 +1,5 @@
 import { useState, useEffect } from "react";
-import { ScrapeResultsExtended } from "./components/ScrapeResultsExtended";
+import { ScrapeResultsExtended } from "@/components/features/results";
 import { Sidebar } from "./components/layout/Sidebar";
 import { ContentRouter } from "./components/layout/ContentRouter";
 import { Menu } from "lucide-react";

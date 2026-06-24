@@ -1,0 +1,1 @@
+export { ScrapeResultsExtended } from './ScrapeResultsExtended';

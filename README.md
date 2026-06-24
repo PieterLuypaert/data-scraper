@@ -29,81 +29,93 @@ Een uitgebreide web scraping applicatie met een moderne React frontend en Shadcn
 
 ```text
 data-scraper/
-├── server.js                    # Main Express server entry point
+├── server.js                    # Express bootstrap (middleware, routes, shutdown)
+├── scripts/
+│   └── kill-port.ps1           # Port cleanup for npm run start:clean
 ├── server/
 │   ├── config/
-│   │   └── index.js            # Configuration (ports, timeouts, etc.)
-│   ├── utils/
-│   │   ├── helpers.js          # Helper functions (URL conversion, attributes)
-│   │   └── compare.js          # Change detection logic
+│   │   └── index.js            # Port, Puppeteer, proxy, timeout settings
+│   ├── middleware/
+│   │   └── auth.js             # Optional API-key auth
+│   ├── routes/
+│   │   ├── scrape.js           # Scrape endpoints
+│   │   ├── custom.js           # Custom CSS selector endpoint
+│   │   ├── crawl.js            # Crawler endpoints
+│   │   ├── compare.js          # Change detection API
+│   │   ├── proxy.js            # Proxy pool management
+│   │   ├── insights.js         # AI insights API
+│   │   └── export.js           # Barrel → services/export/*
+│   ├── services/
+│   │   └── export/
+│   │       ├── sheetBuilder.js # Excel sheet helpers
+│   │       ├── excelExport.js  # Excel handlers
+│   │       ├── pdfExport.js    # PDF handlers
+│   │       ├── pdfBuilder.js   # PDF layout primitives
+│   │       └── pdfTheme.js     # PDF colors/spacing
 │   ├── scrapers/
-│   │   ├── puppeteerScraper.js # Puppeteer scraping for JS-heavy sites
-│   │   ├── cheerioScraper.js   # Cheerio/Axios scraping for simple sites
-│   │   ├── crawler.js          # Website crawler (follows links)
-│   │   ├── dataExtractors.js   # Main data extraction orchestrator
-│   │   └── extractors/
-│   │       ├── basicExtractors.js      # Basic info, meta tags, headings
-│   │       ├── linkExtractor.js       # Links extraction
-│   │       ├── imageExtractor.js       # Images extraction
-│   │       ├── contentExtractors.js    # Paragraphs, lists, tables, forms
-│   │       ├── mediaExtractors.js      # Videos, audio, iframes, scripts
-│   │       ├── metaExtractors.js       # Data attributes, classes, IDs
-│   │       └── analysisExtractors.js   # Contact info, e-commerce, sentiment, SEO analysis
-│   └── routes/
-│       ├── scrape.js           # Main scrape endpoint handler
-│       ├── custom.js           # Custom CSS selector endpoint
-│       ├── crawl.js            # Website crawler endpoint
-│       ├── compare.js          # Change detection endpoint
-│       ├── insights.js         # AI insights endpoint
-│       └── export.js          # Export endpoints (Excel, PDF)
+│   │   ├── browserManager.js   # Shared Puppeteer lifecycle
+│   │   ├── puppeteerScraper.js # JS-heavy sites
+│   │   ├── cheerioScraper.js   # Static HTML sites
+│   │   ├── crawler.js          # Multi-page crawl
+│   │   ├── dataExtractors.js   # Extraction orchestrator
+│   │   └── extractors/         # Domain-specific extractors
 │   └── utils/
-│       ├── helpers.js          # Helper functions (URL conversion, attributes)
-│       ├── compare.js          # Change detection logic
-│       └── aiInsights.js       # Backend AI insights utilities
+│       ├── helpers.js          # URL normalization, error mapping
+│       ├── compare.js          # Server-side scrape diff
+│       ├── aiInsights.js       # Server-side AI insights
+│       ├── ssrfGuard.js        # SSRF protection
+│       ├── robots.js           # robots.txt checks
+│       ├── proxyManager.js     # Proxy pool logic
+│       ├── proxyManagerInstance.js
+│       └── errorResponse.js    # Consistent JSON errors
 ├── src/
 │   ├── api/
-│   │   └── scraper.js          # Frontend API calls
+│   │   └── scraper.js          # Frontend API client
 │   ├── components/
-│   │   ├── ui/                 # Shadcn UI components
-│   │   ├── ScrapeForm.jsx      # Single URL scraping form
-│   │   ├── CrawlForm.jsx       # Website crawler form
-│   │   ├── CustomSelector.jsx  # Custom CSS selector UI
-│   │   ├── ScrapeResultsExtended.jsx  # Detailed results display
-│   │   ├── BulkScrapeForm.jsx  # Bulk scraping component
-│   │   ├── AnalyticsDashboard.jsx  # Analytics dashboard
-│   │   ├── HistoryManager.jsx  # History management
-│   │   ├── ChangeDetection.jsx  # Change detection UI
-│   │   ├── SEOAnalysis.jsx  # SEO analysis component
-│   │   ├── DataVisualization.jsx  # Data visualization with charts
-│   │   ├── SearchAndFilter.jsx  # Search and filter component
-│   │   ├── AIInsights.jsx  # AI-powered content insights component
-│   │   └── LanguageSettings.jsx  # Language settings component
-│   ├── i18n/                 # Internationalization system
-│   │   ├── index.js          # i18n utilities and language management
-│   │   └── locales/         # Translation files
-│   │       ├── nl.json      # Dutch translations
-│   │       ├── en.json      # English translations
-│   │       ├── fr.json      # French translations
-│   │       ├── de.json      # German translations
-│   │       └── es.json      # Spanish translations
+│   │   ├── ui/                 # shadcn primitives (kebab-case)
+│   │   ├── layout/             # Sidebar, ContentRouter, CapabilitiesGrid
+│   │   └── features/           # Feature modules (PascalCase components)
+│   │       ├── scrape/         # ScrapeForm
+│   │       ├── crawl/          # CrawlForm
+│   │       ├── bulk/           # BulkScrapeForm
+│   │       ├── custom-selector/
+│   │       ├── results/        # ScrapeResultsExtended + result sections
+│   │       ├── analytics/      # AnalyticsDashboard, DataVisualization
+│   │       ├── history/        # HistoryManager, ChangeDetection
+│   │       ├── seo/            # SEOAnalysis
+│   │       ├── insights/       # AIInsights
+│   │       ├── proxy/          # ProxyManager
+│   │       └── settings/       # LanguageSettings
+│   ├── config/
+│   │   └── navigation.js       # Tab definitions
+│   ├── i18n/                   # UI translations (nl, en, fr, de, es)
+│   ├── lib/
+│   │   └── utils.js            # shadcn cn() helper (@/lib/utils)
 │   ├── utils/
-│   │   ├── validation.js       # URL validation
-│   │   ├── clipboard.js        # Clipboard utilities
-│   │   ├── storage.js          # localStorage utilities
-│   │   ├── export.js           # Export functionality
-│   │   ├── changeDetection.js  # Frontend change detection
-│   │   ├── contactExtraction.js  # Contact info extraction
-│   │   ├── contentAnalysis.js  # Content analysis utilities
-│   │   ├── languageDetection.js  # Language detection
-│   │   ├── sentimentAnalysis.js  # Sentiment analysis
-│   │   ├── aiInsights.js  # AI-powered content insights utilities
-│   │   └── translation.js  # Translation utilities for scraped content
-│   ├── App.jsx                 # Main React component
-│   ├── main.jsx                # React entry point
-│   └── index.css               # Global styles
+│   │   ├── export.js           # Export barrel → exporters/*
+│   │   ├── exporters/          # JSON, CSV, Excel, PDF client orchestration
+│   │   ├── validation.js, storage.js, clipboard.js
+│   │   ├── changeDetection.js, aiInsights.js
+│   │   ├── sentimentAnalysis.js, languageDetection.js
+│   ├── App.jsx
+│   ├── main.jsx
+│   └── index.css
+├── tests/                      # Vitest (helpers, ssrf, export)
 ├── package.json
-└── vite.config.js              # Vite configuration
+└── vite.config.js
 ```
+
+### Naamgevingsconventies
+
+| Laag | Conventie | Voorbeeld |
+|------|-----------|-----------|
+| UI primitives | kebab-case `.jsx` in `components/ui/` | `page-shell.jsx` |
+| Feature components | PascalCase `.jsx` in `components/features/<domein>/` | `ScrapeForm.jsx` |
+| Feature mappen | kebab-case | `custom-selector/`, `results/` |
+| Server modules | camelCase `.js` | `puppeteerScraper.js` |
+| App utils | camelCase `.js` in `src/utils/` | `changeDetection.js` |
+| shadcn helper | `@/lib/utils` | `cn()` — niet verwarren met `@/utils/` |
+
 
 ## Installatie
 

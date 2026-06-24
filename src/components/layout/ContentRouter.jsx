@@ -1,15 +1,13 @@
-import { ScrapeForm } from "../ScrapeForm";
-import { BulkScrapeForm } from "../BulkScrapeForm";
-import { AnalyticsDashboard } from "../AnalyticsDashboard";
-import { HistoryManager } from "../HistoryManager";
-import { ChangeDetection } from "../ChangeDetection";
-import { CustomSelector } from "../CustomSelector";
-import { CrawlForm } from "../CrawlForm";
-import { SEOAnalysis } from "../SEOAnalysis";
-import { DataVisualization } from "../DataVisualization";
-import { ProxyManager } from "../ProxyManager";
-import { AIInsights } from "../AIInsights";
-import { LanguageSettings } from "../LanguageSettings";
+import { ScrapeForm } from "@/components/features/scrape";
+import { BulkScrapeForm } from "@/components/features/bulk";
+import { AnalyticsDashboard, DataVisualization } from "@/components/features/analytics";
+import { HistoryManager, ChangeDetection } from "@/components/features/history";
+import { CustomSelector } from "@/components/features/custom-selector";
+import { CrawlForm } from "@/components/features/crawl";
+import { SEOAnalysis } from "@/components/features/seo";
+import { ProxyManager } from "@/components/features/proxy";
+import { AIInsights } from "@/components/features/insights";
+import { LanguageSettings } from "@/components/features/settings";
 import { CapabilitiesGrid } from "./CapabilitiesGrid";
 
 /**

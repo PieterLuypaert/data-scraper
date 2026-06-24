@@ -1,4 +1,5 @@
 const ExcelJS = require('exceljs');
+const { Writable } = require('stream');
 const {
   buildSheetDescriptors,
   flattenHeadings,
@@ -6,19 +7,47 @@ const {
   exportToExcel,
   batchExportToExcel,
   exportCrawlToExcel,
+  exportToPDF,
+  exportCrawlToPDF,
 } = require('../server/routes/export');
 
 function mockRes() {
-  return {
+  const chunks = [];
+  const stream = new Writable({
+    write(chunk, _encoding, callback) {
+      chunks.push(Buffer.isBuffer(chunk) ? chunk : Buffer.from(chunk));
+      callback();
+    },
+  });
+
+  const res = Object.assign(stream, {
     statusCode: 200,
     headers: {},
     body: null,
     headersSent: false,
+    finished: false,
     status(c) { this.statusCode = c; return this; },
     setHeader(k, v) { this.headers[k] = v; },
     json(o) { this.body = o; this.headersSent = true; return this; },
     send(b) { this.body = b; this.headersSent = true; return this; },
-  };
+  });
+
+  stream.on('finish', () => {
+    res.body = Buffer.concat(chunks);
+    res.finished = true;
+    res.headersSent = true;
+  });
+
+  return res;
+}
+
+function waitForPdf(res) {
+  return new Promise((resolve, reject) => {
+    if (res.finished && res.body) return resolve(res.body);
+    res.on('finish', () => resolve(res.body));
+    res.on('error', reject);
+    setTimeout(() => reject(new Error('PDF export timed out')), 10000);
+  });
 }
 
 const samplePage = (n = 1) => ({
@@ -121,5 +150,32 @@ describe('exportCrawlToExcel (multi-page, no duplicate-sheet crash)', () => {
     expect(new Set(names).size).toBe(names.length); // no duplicates
     expect(names.some(n => n.startsWith('P1_'))).toBe(true);
     expect(names.some(n => n.startsWith('P2_'))).toBe(true);
+  });
+});
+
+describe('exportToPDF', () => {
+  it('produces a valid PDF buffer with correct content type', async () => {
+    const res = mockRes();
+    await exportToPDF({ body: { data: samplePage() } }, res);
+    const buffer = await waitForPdf(res);
+    expect(Buffer.isBuffer(buffer)).toBe(true);
+    expect(buffer.slice(0, 5).toString()).toBe('%PDF-');
+    expect(res.headers['Content-Type']).toBe('application/pdf');
+  });
+});
+
+describe('exportCrawlToPDF', () => {
+  it('produces a valid PDF for multi-page crawl data', async () => {
+    const res = mockRes();
+    await exportCrawlToPDF({ body: { data: {
+      startUrl: 'https://example.com',
+      totalPages: 2,
+      pages: [samplePage(1), samplePage(2)],
+      summary: { totalLinks: 2, totalImages: 2, totalHeadings: 4 },
+    } } }, res);
+    const buffer = await waitForPdf(res);
+    expect(Buffer.isBuffer(buffer)).toBe(true);
+    expect(buffer.slice(0, 5).toString()).toBe('%PDF-');
+    expect(res.headers['Content-Type']).toBe('application/pdf');
   });
 });
