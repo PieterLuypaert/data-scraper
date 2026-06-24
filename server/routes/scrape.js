@@ -45,9 +45,25 @@ async function handleScrape(req, res) {
       htmlContent = result.htmlContent;
       finalUrl = result.finalUrl;
     } else {
-      result = await scrapeWithCheerio(url);
-      htmlContent = result.htmlContent;
-      finalUrl = result.finalUrl;
+      try {
+        result = await scrapeWithCheerio(url);
+        htmlContent = result.htmlContent;
+        finalUrl = result.finalUrl;
+      } catch (cheerioError) {
+        // The lightweight (axios) request is the easiest to detect and block.
+        // When a site rejects it with a typical anti-bot status, retry once
+        // with the real (stealth) browser, which passes many basic checks that
+        // axios can't. Sites with full challenges/CAPTCHAs still fail — those
+        // are intentionally not bypassed.
+        const blockedStatus = cheerioError?.response?.status;
+        const isBlocked = [403, 429, 503].includes(blockedStatus);
+        if (!isBlocked) throw cheerioError;
+
+        console.log(`Cheerio blocked (HTTP ${blockedStatus}); retrying with stealth browser...`);
+        result = await scrapeWithPuppeteer(url, forcePuppeteer);
+        htmlContent = result.htmlContent;
+        finalUrl = result.finalUrl;
+      }
     }
 
     // Extract all data from HTML
